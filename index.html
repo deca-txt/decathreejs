@@ -5,116 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Chrono Core V3" />
-  <title>Chrono Core V3</title>
+  <meta name="apple-mobile-web-app-title" content="Aether Core" />
+  <title>Aether Core V4</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <canvas id="stage"></canvas>
 
-  <div class="fx-overlay"></div>
+    <div class="hud hud-top">
+      <div class="brand glass">
+        <span class="eyebrow">APPLE DEMO SCI-FI</span>
+        <strong>Aether Core</strong>
+      </div>
 
-  <div class="ui-shell">
-    <header class="topbar">
-      <div class="brand-pill glass compact">
-        <div class="eyebrow">THREE.JS / V3</div>
-        <div class="brand-row">
-          <strong>Chrono Core</strong>
-          <span id="phaseLabel" class="tag">Fase 01</span>
+      <div class="stats glass">
+        <div class="stat">
+          <span class="label">Pontos</span>
+          <span id="score" class="value">000000</span>
+        </div>
+        <div class="stat">
+          <span class="label">Combo</span>
+          <span id="combo" class="value">x1</span>
+        </div>
+        <div class="stat">
+          <span class="label">Tempo</span>
+          <span id="time" class="value">45.0s</span>
         </div>
       </div>
 
-      <button id="fullscreenBtn" class="ui-button glass compact" type="button">Tela cheia</button>
-    </header>
-
-    <section class="hud-panel glass">
-      <div class="metric">
-        <span class="metric-label">Pontuação</span>
-        <strong id="scoreValue">000000</strong>
-      </div>
-      <div class="metric">
-        <span class="metric-label">Combo</span>
-        <strong id="comboValue">x1</strong>
-      </div>
-      <div class="metric">
-        <span class="metric-label">Tempo</span>
-        <strong id="timeValue">50.0s</strong>
-      </div>
-      <div class="metric energy-metric">
-        <div class="energy-head">
-          <span class="metric-label">Energia</span>
-          <strong id="energyValue">0%</strong>
-        </div>
-        <div class="meter-track">
-          <div id="energyFill" class="meter-fill"></div>
-        </div>
-      </div>
-    </section>
-
-    <div id="statusToast" class="status-toast glass">
-      Toque nos fragmentos brilhantes. O fragmento dourado vale mais.
+      <button id="fullscreenBtn" class="glass action-button" type="button">Tela cheia</button>
     </div>
 
-    <section class="bottom-hud">
-      <div class="objective-card glass">
-        <div class="objective-kicker">Objetivo</div>
-        <strong id="objectiveText">Ative o núcleo antes do tempo acabar</strong>
-        <span id="statusText">Arraste para inclinar a câmera. Toque rápido para subir o combo.</span>
-      </div>
-
-      <div class="side-stack">
-        <div class="mini-card glass">
-          <span class="mini-label">Sequência</span>
-          <strong id="streakValue">0</strong>
+    <div class="hud hud-energy">
+      <div class="energy glass">
+        <div class="energy-row">
+          <span class="label">Carga do núcleo</span>
+          <span id="energyValue" class="energy-value">0%</span>
         </div>
-        <div class="mini-card glass">
-          <span class="mini-label">Alvo raro</span>
-          <strong id="bonusValue">OFF</strong>
+        <div class="bar-track">
+          <div id="energyBar" class="bar-fill"></div>
         </div>
-      </div>
-    </section>
-  </div>
-
-  <div id="startOverlay" class="overlay visible">
-    <div class="overlay-card glass strong">
-      <div class="eyebrow">V3 / PREMIUM MOBILE SHOWCASE</div>
-      <h1>Visual mais limpo, cena maior e mais jogo</h1>
-      <p>
-        Nesta versão a interface ocupa menos tela e a área 3D ganha mais protagonismo.
-        Toque nos fragmentos orbitais, aproveite o alvo dourado quando surgir e complete 100% de carga.
-      </p>
-      <ul>
-        <li>HUD mais compacto para não esconder a cena</li>
-        <li>Fragmento dourado com bônus alto e pulso visual</li>
-        <li>Fases com intensidade crescente e camera mais cinematográfica</li>
-      </ul>
-      <div class="overlay-actions">
-        <button id="startBtn" class="ui-button primary" type="button">Iniciar V3</button>
       </div>
     </div>
-  </div>
 
-  <div id="endOverlay" class="overlay">
-    <div class="overlay-card glass strong">
-      <div id="endEyebrow" class="eyebrow">MISSÃO ENCERRADA</div>
-      <h2 id="endTitle">Resultado</h2>
-      <p id="endMessage"></p>
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span>Pontuação</span>
-          <strong id="endScore">0</strong>
-        </div>
-        <div class="summary-item">
-          <span>Maior combo</span>
-          <strong id="endCombo">x1</strong>
-        </div>
-        <div class="summary-item">
-          <span>Carga</span>
-          <strong id="endEnergy">0%</strong>
+    <div class="hud hud-bottom">
+      <div class="bottom-left glass compact">
+        <span class="label">Objetivo</span>
+        <strong>Toque nos fragmentos para atingir 100%</strong>
+      </div>
+      <div class="bottom-right glass chips">
+        <span class="chip">Fase <strong>04</strong></span>
+        <span class="chip">Sequência <strong id="streak">0</strong></span>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <div id="overlayStart" class="overlay">
+      <div class="overlay-card glass">
+        <span class="eyebrow">AETHER // REACTIVE EXPERIENCE</span>
+        <h1>Aether Core</h1>
+        <p>
+          Visual minimalista, toque preciso e núcleo reativo. Arraste para inclinar a cena.
+          Toques curtos nos fragmentos contabilizam energia, combo e pontuação.
+        </p>
+        <div class="overlay-actions">
+          <button id="startBtn" class="primary-btn" type="button">Iniciar experiência</button>
         </div>
       </div>
-      <div class="overlay-actions">
-        <button id="restartBtn" class="ui-button primary" type="button">Jogar novamente</button>
+    </div>
+
+    <div id="overlayEnd" class="overlay hidden">
+      <div class="overlay-card glass">
+        <span class="eyebrow">RESULTADO</span>
+        <h2 id="endTitle">Missão concluída</h2>
+        <p id="endSummary"></p>
+        <div class="overlay-actions">
+          <button id="restartBtn" class="primary-btn" type="button">Jogar novamente</button>
+        </div>
       </div>
     </div>
   </div>

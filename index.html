@@ -5,57 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Aperture Flight" />
-  <title>Chrono Core V6.1 — Aperture Flight</title>
-  <link rel="stylesheet" href="./style.css?v=61" />
+  <meta name="apple-mobile-web-app-title" content="Aperture Flight V7" />
+  <title>Chrono Core V7 — Aperture Flight Minimal</title>
+  <link rel="stylesheet" href="./style.css?v=7" />
 </head>
 <body>
   <div id="app"></div>
 
-  <div class="top-shell">
-    <div class="brand glass compact-brand">
-      <div class="eyebrow">APPLE SCI-FI FLIGHT DEMO</div>
-      <h1>Aperture Flight</h1>
-      <p>Nave controlável em um corredor temporal premium.</p>
+  <div class="topbar">
+    <div id="hudIsland" class="hud-island glass hidden">
+      <div class="hud-line">
+        <span>Energia</span>
+        <strong id="energyText">100%</strong>
+      </div>
+      <div class="hud-line compact">
+        <span>Rota <strong id="routeText">0%</strong></span>
+        <span>Vel <strong id="speedText">120</strong></span>
+        <span>Cristais <strong id="crystalText">0</strong></span>
+      </div>
     </div>
 
-    <button id="fullscreenBtn" class="glass action-btn" type="button">Tela cheia</button>
+    <button id="fullscreenBtn" class="glass fs-btn" type="button">Tela cheia</button>
   </div>
 
-  <div class="hud glass">
-    <div class="metric">
-      <span class="label">Pontuação</span>
-      <strong id="score">000000</strong>
-    </div>
-    <div class="metric">
-      <span class="label">Fase</span>
-      <strong id="phase">01</strong>
-    </div>
-    <div class="metric">
-      <span class="label">Velocidade</span>
-      <strong id="speed">120</strong>
-    </div>
-    <div class="metric metric-wide">
-      <span class="label">Energia</span>
-      <div class="bar"><div id="energyFill" class="bar-fill"></div></div>
-      <strong id="energy">100%</strong>
-    </div>
-    <div class="metric metric-wide">
-      <span class="label">Rota</span>
-      <div class="bar subtle"><div id="routeFill" class="bar-fill route"></div></div>
-      <strong id="distance">0%</strong>
+  <div class="bottom-center hidden" id="missionBarWrap">
+    <div class="mission-bar glass">
+      <div class="bar-track"><div id="missionFill" class="bar-fill"></div></div>
     </div>
   </div>
 
-  <div class="bottom-shell">
-    <div class="status-pills">
-      <div class="pill glass">Combo <strong id="combo">x1</strong></div>
-      <div class="pill glass">Portais <strong id="gates">0</strong></div>
-      <div class="pill glass">Cristais <strong id="crystals">0</strong></div>
-    </div>
-  </div>
-
-  <div class="controls">
+  <div class="controls hidden" id="controlsWrap">
     <div id="joystick" class="joystick glass" aria-label="Joystick virtual">
       <div class="joystick-ring"></div>
       <div id="stick" class="stick"></div>
@@ -64,47 +43,33 @@
   </div>
 
   <div id="startOverlay" class="overlay visible">
-    <div class="overlay-card glass large start-card">
-      <div class="eyebrow">CHRONO CORE V6.1</div>
-      <h2>Aperture Flight</h2>
-      <p>Versão corrigida com início mais robusto, visual clean e nave controlável para iPhone.</p>
-      <ul>
-        <li>Use o joystick à esquerda para deslocar a nave.</li>
-        <li>Segure BOOST para acelerar e ganhar ritmo.</li>
-        <li>Atravesse portais e colete cristais para sustentar a energia.</li>
-      </ul>
-      <button id="startBtn" class="start-btn" type="button" onclick="window.startExperience && window.startExperience()">Iniciar voo</button>
-      <div class="tap-tip">Se o Safari mantiver cache, recarregue com um parâmetro novo no link.</div>
+    <div class="overlay-card glass start-card">
+      <div class="eyebrow">APPLE SCI-FI FLIGHT</div>
+      <h1>Aperture Flight</h1>
+      <p>V7 com interface reduzida e foco real na cena 3D. Ao iniciar, fica visível apenas o essencial.</p>
+      <div class="mini-guide">
+        <span>Joystick para mover</span>
+        <span>BOOST para acelerar</span>
+        <span>Cruze os portais e colete cristais</span>
+      </div>
+      <button id="startBtn" class="start-btn" type="button">Iniciar voo</button>
     </div>
   </div>
 
   <div id="endOverlay" class="overlay">
-    <div class="overlay-card glass large">
-      <div class="eyebrow">ROTA ENCERRADA</div>
+    <div class="overlay-card glass end-card">
+      <div class="eyebrow">ROTA CONCLUÍDA</div>
       <h2 id="endTitle">Missão encerrada</h2>
-      <p id="endText">Seu voo chegou ao fim.</p>
-      <div class="result-grid">
-        <div class="result-cell glass">
-          <span>Pontuação</span>
-          <strong id="finalScore">000000</strong>
-        </div>
-        <div class="result-cell glass">
-          <span>Portais</span>
-          <strong id="finalGates">0</strong>
-        </div>
-        <div class="result-cell glass">
-          <span>Cristais</span>
-          <strong id="finalCrystals">0</strong>
-        </div>
-        <div class="result-cell glass">
-          <span>Combo máx.</span>
-          <strong id="finalCombo">x1</strong>
-        </div>
+      <p id="endText">Seu voo terminou.</p>
+      <div class="result-row">
+        <div class="result-pill glass"><span>Score</span><strong id="finalScore">000000</strong></div>
+        <div class="result-pill glass"><span>Portais</span><strong id="finalGates">0</strong></div>
+        <div class="result-pill glass"><span>Cristais</span><strong id="finalCrystals">0</strong></div>
       </div>
       <button id="restartBtn" class="start-btn" type="button">Voar novamente</button>
     </div>
   </div>
 
-  <script type="module" src="./app.js?v=61"></script>
+  <script type="module" src="./app.js?v=7"></script>
 </body>
 </html>

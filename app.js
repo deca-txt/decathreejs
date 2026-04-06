@@ -2,65 +2,56 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 
 const dom = {
   app: document.getElementById('app'),
+  hudIsland: document.getElementById('hudIsland'),
   fullscreenBtn: document.getElementById('fullscreenBtn'),
-  score: document.getElementById('score'),
-  phase: document.getElementById('phase'),
-  speed: document.getElementById('speed'),
-  energy: document.getElementById('energy'),
-  energyFill: document.getElementById('energyFill'),
-  routeFill: document.getElementById('routeFill'),
-  distance: document.getElementById('distance'),
-  combo: document.getElementById('combo'),
-  gates: document.getElementById('gates'),
-  crystals: document.getElementById('crystals'),
+  missionBarWrap: document.getElementById('missionBarWrap'),
+  controlsWrap: document.getElementById('controlsWrap'),
   joystick: document.getElementById('joystick'),
   stick: document.getElementById('stick'),
   boostBtn: document.getElementById('boostBtn'),
   startOverlay: document.getElementById('startOverlay'),
-  endOverlay: document.getElementById('endOverlay'),
   startBtn: document.getElementById('startBtn'),
+  endOverlay: document.getElementById('endOverlay'),
   restartBtn: document.getElementById('restartBtn'),
   endTitle: document.getElementById('endTitle'),
   endText: document.getElementById('endText'),
+  energyText: document.getElementById('energyText'),
+  routeText: document.getElementById('routeText'),
+  speedText: document.getElementById('speedText'),
+  crystalText: document.getElementById('crystalText'),
+  missionFill: document.getElementById('missionFill'),
   finalScore: document.getElementById('finalScore'),
   finalGates: document.getElementById('finalGates'),
   finalCrystals: document.getElementById('finalCrystals'),
-  finalCombo: document.getElementById('finalCombo'),
 };
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x06101d, 0.048);
+scene.fog = new THREE.FogExp2(0x06111d, 0.048);
 
-const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.1, 240);
-camera.position.set(0, 0.85, 9.2);
+const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 220);
+camera.position.set(0, 0.8, 8.3);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.12;
 dom.app.appendChild(renderer.domElement);
 
 const clock = new THREE.Clock();
-const world = new THREE.Group();
-scene.add(world);
 
-scene.add(new THREE.HemisphereLight(0xdff3ff, 0x04070e, 2.1));
-const keyLight = new THREE.DirectionalLight(0xf0fbff, 2.4);
-keyLight.position.set(5, 7, 8);
+scene.add(new THREE.HemisphereLight(0xe7f6ff, 0x05070b, 2.0));
+const keyLight = new THREE.DirectionalLight(0xf1fbff, 2.6);
+keyLight.position.set(5, 7, 7);
 scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0x96cfff, 1.4);
-rimLight.position.set(-6, 1, -3);
+const rimLight = new THREE.DirectionalLight(0x8ccfff, 1.35);
+rimLight.position.set(-6, 2, -4);
 scene.add(rimLight);
 
-const bgUniforms = {
-  uTime: { value: 0 },
-  uBoost: { value: 0 }
-};
-
+const bgUniforms = { uTime: { value: 0 }, uBoost: { value: 0 } };
 const bg = new THREE.Mesh(
-  new THREE.SphereGeometry(100, 48, 48),
+  new THREE.SphereGeometry(90, 48, 48),
   new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
@@ -78,12 +69,12 @@ const bg = new THREE.Mesh(
       uniform float uTime;
       uniform float uBoost;
 
-      float hash(vec3 p){
+      float hash(vec3 p) {
         p = fract(p * 0.3183099 + vec3(.1,.2,.3));
         p *= 17.0;
         return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
       }
-      float noise(vec3 x){
+      float noise(vec3 x) {
         vec3 i = floor(x);
         vec3 f = fract(x);
         f = f * f * (3.0 - 2.0 * f);
@@ -105,51 +96,50 @@ const bg = new THREE.Mesh(
       }
       void main() {
         vec3 d = normalize(vDir);
-        float t = uTime * 0.04;
+        float t = uTime * 0.03;
         float horizon = pow(1.0 - abs(d.y), 2.0);
-        float neb = noise(d * 5.0 + vec3(t, -t * 1.3, t * 0.5));
-        float band = 0.5 + 0.5 * sin(atan(d.z, d.x) * 5.0 + uTime * 0.35 + d.y * 3.0);
+        float neb = noise(d * 5.0 + vec3(t, -t * 1.25, t * 0.6));
+        float pulse = 0.5 + 0.5 * sin(atan(d.z, d.x) * 4.0 + uTime * 0.28 + d.y * 2.8);
         vec3 deep = vec3(0.02, 0.04, 0.08);
-        vec3 mid = vec3(0.05, 0.10, 0.17);
-        vec3 cold = vec3(0.30, 0.60, 0.84);
-        vec3 whiteBlue = vec3(0.90, 0.98, 1.0);
+        vec3 mid = vec3(0.05, 0.10, 0.16);
+        vec3 blue = vec3(0.28, 0.56, 0.84);
+        vec3 whiteBlue = vec3(0.91, 0.98, 1.0);
         vec3 color = mix(deep, mid, horizon);
-        color += cold * smoothstep(0.35, 1.0, neb) * 0.20;
-        color += whiteBlue * band * horizon * (0.05 + uBoost * 0.08);
-        color += vec3(0.65,0.8,1.0) * horizon * 0.05;
+        color += blue * smoothstep(0.32, 1.0, neb) * 0.16;
+        color += whiteBlue * horizon * pulse * (0.04 + uBoost * 0.05);
         gl_FragColor = vec4(color, 1.0);
       }
-    `
+    `,
   })
 );
 scene.add(bg);
 
-const laneWidth = 3.45;
-const laneHeight = 2.10;
-const courseLength = 600;
+const world = new THREE.Group();
+scene.add(world);
+
+const laneWidth = 3.4;
+const laneHeight = 2.15;
+const routeTarget = 180;
 
 const state = {
   running: false,
   done: false,
   score: 0,
-  combo: 1,
-  maxCombo: 1,
-  energy: 100,
-  progress: 0,
-  phase: 1,
   speedBase: 18,
   speed: 18,
+  energy: 100,
+  route: 0,
+  crystals: 0,
+  gates: 0,
   boost: 0,
-  gateCount: 0,
-  crystalCount: 0,
-  pulse: 0,
+  blink: 0,
 };
 
 const input = {
   x: 0,
   y: 0,
   boost: false,
-  keyboard: { left: false, right: false, up: false, down: false }
+  keyboard: { left: false, right: false, up: false, down: false },
 };
 
 const ship = new THREE.Group();
@@ -157,101 +147,98 @@ world.add(ship);
 
 function createShip() {
   const hullMat = new THREE.MeshPhysicalMaterial({
-    color: 0xf1fbff,
-    emissive: 0x89d8ff,
-    emissiveIntensity: 0.12,
+    color: 0xf2fbff,
+    emissive: 0x8fdbff,
+    emissiveIntensity: 0.10,
     roughness: 0.18,
-    metalness: 0.46,
+    metalness: 0.40,
     clearcoat: 1,
-    clearcoatRoughness: 0.08,
+    clearcoatRoughness: 0.06,
   });
+
   const glassMat = new THREE.MeshPhysicalMaterial({
-    color: 0xd9f6ff,
-    emissive: 0xb7ebff,
+    color: 0xdbf6ff,
+    emissive: 0xbceeff,
     emissiveIntensity: 0.08,
-    roughness: 0.06,
+    roughness: 0.05,
     metalness: 0.08,
-    transmission: 0.52,
+    transmission: 0.48,
     transparent: true,
-    opacity: 0.92,
-    thickness: 0.8,
+    opacity: 0.94,
+    thickness: 0.7,
     clearcoat: 1,
     clearcoatRoughness: 0.04,
   });
+
   const glowMat = new THREE.MeshBasicMaterial({
-    color: 0xe3f8ff,
+    color: 0xe6f8ff,
     transparent: true,
-    opacity: 0.20,
+    opacity: 0.18,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 1.25, 8, 16), hullMat);
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.30, 1.18, 8, 16), hullMat);
   body.rotation.z = Math.PI * 0.5;
   ship.add(body);
 
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.95, 20), hullMat);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.90, 18), hullMat);
   nose.rotation.z = -Math.PI * 0.5;
-  nose.position.set(1.02, 0, 0);
+  nose.position.set(0.98, 0, 0);
   ship.add(nose);
 
-  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 24), glassMat);
-  cockpit.scale.set(1.22, 0.74, 0.74);
-  cockpit.position.set(0.26, 0.12, 0);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.38, 22, 22), glassMat);
+  cockpit.scale.set(1.18, 0.72, 0.72);
+  cockpit.position.set(0.20, 0.12, 0);
   ship.add(cockpit);
 
-  const wingGeo = new THREE.BoxGeometry(1.16, 0.05, 0.45);
+  const wingGeo = new THREE.BoxGeometry(1.10, 0.05, 0.38);
   const wingL = new THREE.Mesh(wingGeo, hullMat);
-  wingL.position.set(-0.04, 0.12, -0.52);
+  wingL.position.set(-0.08, 0.11, -0.46);
   wingL.rotation.x = -0.16;
-  wingL.rotation.z = 0.05;
   ship.add(wingL);
+
   const wingR = wingL.clone();
-  wingR.position.z = 0.52;
+  wingR.position.z = 0.46;
   wingR.rotation.x = 0.16;
-  wingR.rotation.z = -0.05;
   ship.add(wingR);
 
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.38, 0.05), hullMat);
-  fin.position.set(-0.78, 0.30, 0);
-  fin.rotation.z = 0.2;
-  ship.add(fin);
-
-  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.68, 0.04, 16, 64), glowMat);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.035, 16, 64), glowMat);
   halo.rotation.y = Math.PI * 0.5;
   ship.add(halo);
 
-  const trailGroup = new THREE.Group();
-  ship.add(trailGroup);
   const thrusterMat = new THREE.MeshBasicMaterial({
     color: 0xeafcff,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.78,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const thrusterA = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.85, 16, 1, true), thrusterMat);
-  thrusterA.rotation.z = Math.PI * 0.5;
-  thrusterA.position.set(-1.02, 0.04, -0.16);
-  trailGroup.add(thrusterA);
-  const thrusterB = thrusterA.clone();
-  thrusterB.position.z = 0.16;
-  trailGroup.add(thrusterB);
-  const trailGlow = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.02, 2.2, 16, 1, true),
+
+  const jetA = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.86, 16, 1, true), thrusterMat);
+  jetA.rotation.z = Math.PI * 0.5;
+  jetA.position.set(-0.96, 0.03, -0.12);
+  ship.add(jetA);
+
+  const jetB = jetA.clone();
+  jetB.position.z = 0.12;
+  ship.add(jetB);
+
+  const trail = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.02, 1.8, 14, 1, true),
     new THREE.MeshBasicMaterial({
       color: 0xdff7ff,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.12,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
   );
-  trailGlow.rotation.z = Math.PI * 0.5;
-  trailGlow.position.set(-1.55, 0, 0);
-  trailGroup.add(trailGlow);
+  trail.rotation.z = Math.PI * 0.5;
+  trail.position.set(-1.35, 0, 0);
+  ship.add(trail);
 
-  return { halo, thrusterA, thrusterB, trailGlow };
+  return { halo, jetA, jetB, trail };
 }
 
 const shipFx = createShip();
@@ -259,13 +246,14 @@ ship.position.set(0, 0, 0);
 
 const corridor = new THREE.Group();
 world.add(corridor);
+
 for (let i = 0; i < 20; i++) {
   const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(5.8, 0.03, 12, 90),
+    new THREE.TorusGeometry(5.6, 0.02, 12, 90),
     new THREE.MeshBasicMaterial({
-      color: i % 3 === 0 ? 0xe9fbff : 0xaed7ff,
+      color: i % 2 === 0 ? 0xeafcff : 0xb2dbff,
       transparent: true,
-      opacity: i % 3 === 0 ? 0.14 : 0.08,
+      opacity: i % 2 === 0 ? 0.14 : 0.08,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
@@ -274,547 +262,447 @@ for (let i = 0; i < 20; i++) {
   ring.rotation.x = Math.PI * 0.5;
   corridor.add(ring);
 }
-for (let i = 0; i < 6; i++) {
-  const line = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.018, 0.018, 220, 8, 1, true),
+
+const rails = new THREE.Group();
+world.add(rails);
+for (let i = 0; i < 4; i++) {
+  const x = i < 2 ? -4.2 : 4.2;
+  const y = i % 2 === 0 ? -2.8 : 2.8;
+  const rail = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.024, 0.024, 220, 8, 1, true),
     new THREE.MeshBasicMaterial({
-      color: i % 2 === 0 ? 0xe6fbff : 0xb6cbff,
+      color: 0xc0e8ff,
       transparent: true,
-      opacity: i % 2 === 0 ? 0.14 : 0.08,
+      opacity: 0.10,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
   );
-  line.rotation.z = Math.PI * 0.5;
-  line.position.set((i - 2.5) * 1.55, 0, -105);
-  line.rotation.y = 0.16 * (i - 2.5);
-  corridor.add(line);
+  rail.rotation.z = Math.PI * 0.5;
+  rail.position.set(x, y, -104);
+  rails.add(rail);
 }
 
-const stars = new THREE.Group();
-scene.add(stars);
-for (let i = 0; i < 260; i++) {
-  const star = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.06 + Math.random() * 0.05, 0.06 + Math.random() * 0.05),
-    new THREE.MeshBasicMaterial({
-      color: Math.random() < 0.25 ? 0xbfdcff : 0xffffff,
-      transparent: true,
-      opacity: 0.55 + Math.random() * 0.35,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  star.position.set(
-    (Math.random() - 0.5) * 48,
-    (Math.random() - 0.5) * 28,
-    -Math.random() * 220
-  );
-  stars.add(star);
+const starGeo = new THREE.BufferGeometry();
+const starCount = 1600;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  const i3 = i * 3;
+  starPos[i3] = (Math.random() - 0.5) * 28;
+  starPos[i3 + 1] = (Math.random() - 0.5) * 22;
+  starPos[i3 + 2] = -Math.random() * 200;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const stars = new THREE.Points(
+  starGeo,
+  new THREE.PointsMaterial({
+    color: 0xf2fbff,
+    size: 0.05,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  })
+);
+world.add(stars);
+
+const gates = [];
+const crystals = [];
+
+function makeGate(index) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: index % 3 === 0 ? 0xffffff : 0xd1ecff,
+    transparent: true,
+    opacity: 0.34,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const gate = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.08, 18, 60), mat);
+  gate.userData = { hit: false, pulse: Math.random() * Math.PI * 2 };
+  world.add(gate);
+  gates.push(gate);
+  return gate;
 }
 
-const gateData = [];
-const crystalData = [];
-const pulseData = [];
-
-function createGate(z) {
+function makeCrystal() {
   const group = new THREE.Group();
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1.35, 0.10, 18, 84),
-    new THREE.MeshBasicMaterial({
-      color: 0xe4fbff,
-      transparent: true,
-      opacity: 0.38,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(1.72, 0.03, 12, 84),
-    new THREE.MeshBasicMaterial({
-      color: 0xb8e2ff,
-      transparent: true,
-      opacity: 0.16,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  group.add(ring, halo);
-  group.position.set(THREE.MathUtils.randFloatSpread(laneWidth * 1.1), THREE.MathUtils.randFloatSpread(laneHeight * 1.05), z);
-  world.add(group);
-  return { group, ring, halo, radius: 1.35, passed: false };
-}
-
-function createCrystal(z, rare = false) {
-  const group = new THREE.Group();
-  const color = rare ? 0xffefb6 : 0xd9f7ff;
-  const gem = new THREE.Mesh(
-    new THREE.OctahedronGeometry(rare ? 0.34 : 0.24, 0),
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.18, 0),
     new THREE.MeshPhysicalMaterial({
-      color,
-      emissive: rare ? 0xffdf72 : 0xc8f4ff,
-      emissiveIntensity: rare ? 0.9 : 0.55,
+      color: 0xf0fbff,
+      emissive: 0xb3e7ff,
+      emissiveIntensity: 0.44,
       roughness: 0.12,
-      metalness: 0.28,
-      transmission: 0.35,
+      metalness: 0.10,
+      transmission: 0.45,
       transparent: true,
-      opacity: 0.94,
-      clearcoat: 1,
-      clearcoatRoughness: 0.05,
+      opacity: 0.98,
     })
   );
   const halo = new THREE.Mesh(
-    new THREE.SphereGeometry(rare ? 0.6 : 0.46, 16, 16),
+    new THREE.SphereGeometry(0.33, 18, 18),
     new THREE.MeshBasicMaterial({
-      color,
+      color: 0xc5ebff,
       transparent: true,
-      opacity: rare ? 0.17 : 0.10,
+      opacity: 0.07,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
   );
-  group.add(gem, halo);
-  group.position.set(THREE.MathUtils.randFloatSpread(laneWidth * 1.15), THREE.MathUtils.randFloatSpread(laneHeight * 1.15), z);
+  group.add(core);
+  group.add(halo);
+  group.userData = { hit: false, spin: Math.random() * 2 + 1.4 };
   world.add(group);
-  return { group, gem, halo, rare, collected: false, spin: 0.8 + Math.random() * 1.2, bobSeed: Math.random() * Math.PI * 2 };
+  crystals.push(group);
+  return group;
 }
 
-function createPulse(z) {
-  const mesh = new THREE.Mesh(
-    new THREE.TorusGeometry(0.72, 0.03, 12, 60),
-    new THREE.MeshBasicMaterial({
-      color: 0xe8fcff,
-      transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  mesh.position.set(0, 0, z);
-  world.add(mesh);
-  return { mesh, active: false, life: 0 };
+for (let i = 0; i < 8; i++) makeGate(i);
+for (let i = 0; i < 12; i++) makeCrystal();
+
+function randomLaneX() {
+  return THREE.MathUtils.randFloatSpread(laneWidth * 1.45);
 }
 
-for (let i = 0; i < 14; i++) gateData.push(createGate(-24 - i * 32));
-for (let i = 0; i < 18; i++) crystalData.push(createCrystal(-18 - i * 24, i % 8 === 0));
-for (let i = 0; i < 5; i++) pulseData.push(createPulse(-30 - i * 36));
-
-function resetGate(gate, z) {
-  gate.radius = THREE.MathUtils.randFloat(1.0, state.phase >= 3 ? 1.25 : 1.5);
-  gate.group.position.set(
-    THREE.MathUtils.randFloatSpread(laneWidth * (state.phase >= 3 ? 1.0 : 1.12)),
-    THREE.MathUtils.randFloatSpread(laneHeight * (state.phase >= 3 ? 1.0 : 1.12)),
-    z
-  );
-  gate.group.rotation.x = THREE.MathUtils.randFloatSpread(0.28);
-  gate.group.rotation.y = THREE.MathUtils.randFloatSpread(0.28);
-  gate.ring.geometry.dispose();
-  gate.halo.geometry.dispose();
-  gate.ring.geometry = new THREE.TorusGeometry(gate.radius, 0.10, 18, 84);
-  gate.halo.geometry = new THREE.TorusGeometry(gate.radius * 1.27, 0.03, 12, 84);
-  gate.passed = false;
+function randomLaneY() {
+  return THREE.MathUtils.randFloatSpread(laneHeight * 1.35);
 }
 
-function resetCrystal(crystal, z) {
-  crystal.rare = Math.random() < 0.15;
-  crystal.group.position.set(
-    THREE.MathUtils.randFloatSpread(laneWidth * 1.18),
-    THREE.MathUtils.randFloatSpread(laneHeight * 1.18),
-    z
-  );
-  crystal.group.visible = true;
-  crystal.collected = false;
-  crystal.gem.scale.setScalar(crystal.rare ? 1.25 : 1.0);
-  crystal.halo.scale.setScalar(crystal.rare ? 1.25 : 1.0);
-  crystal.gem.material.color.setHex(crystal.rare ? 0xffefb6 : 0xd9f7ff);
-  crystal.gem.material.emissive.setHex(crystal.rare ? 0xffdf72 : 0xc8f4ff);
-  crystal.gem.material.emissiveIntensity = crystal.rare ? 0.9 : 0.55;
-  crystal.halo.material.color.setHex(crystal.rare ? 0xffefb6 : 0xd9f7ff);
-  crystal.halo.material.opacity = crystal.rare ? 0.17 : 0.10;
+function resetObjectPositions() {
+  let zCursor = -20;
+  gates.forEach((gate) => {
+    zCursor -= THREE.MathUtils.randFloat(18, 28);
+    gate.position.set(randomLaneX() * 0.7, randomLaneY() * 0.6, zCursor);
+    gate.rotation.x = Math.PI * 0.5;
+    gate.userData.hit = false;
+  });
+
+  let cCursor = -10;
+  crystals.forEach((crystal) => {
+    cCursor -= THREE.MathUtils.randFloat(10, 20);
+    crystal.position.set(randomLaneX(), randomLaneY(), cCursor);
+    crystal.userData.hit = false;
+  });
+}
+resetObjectPositions();
+
+function respawnGate(gate) {
+  const farthest = Math.min(...gates.map((g) => g.position.z));
+  gate.position.set(randomLaneX() * 0.7, randomLaneY() * 0.6, farthest - THREE.MathUtils.randFloat(18, 28));
+  gate.userData.hit = false;
 }
 
-function emitPulse(z) {
-  const pulse = pulseData[Math.floor(Math.random() * pulseData.length)];
-  pulse.mesh.position.set(THREE.MathUtils.randFloatSpread(0.5), THREE.MathUtils.randFloatSpread(0.35), z);
-  pulse.mesh.scale.setScalar(1);
-  pulse.mesh.material.opacity = 0.35;
-  pulse.active = true;
-  pulse.life = 0;
+function respawnCrystal(crystal) {
+  const farthest = Math.min(...crystals.map((c) => c.position.z));
+  crystal.position.set(randomLaneX(), randomLaneY(), farthest - THREE.MathUtils.randFloat(10, 18));
+  crystal.userData.hit = false;
 }
 
-function syncHUD() {
-  dom.score.textContent = String(Math.round(Math.max(0, state.score))).padStart(6, '0');
-  dom.phase.textContent = String(state.phase).padStart(2, '0');
-  dom.speed.textContent = String(Math.round(state.speed * 8));
-  dom.energy.textContent = `${Math.round(Math.max(0, state.energy))}%`;
-  dom.energyFill.style.width = `${THREE.MathUtils.clamp(state.energy, 0, 100)}%`;
-  dom.distance.textContent = `${Math.round(state.progress)}%`;
-  dom.routeFill.style.width = `${THREE.MathUtils.clamp(state.progress, 0, 100)}%`;
-  dom.combo.textContent = `x${state.combo}`;
-  dom.gates.textContent = `${state.gateCount}`;
-  dom.crystals.textContent = `${state.crystalCount}`;
+function clampShip() {
+  ship.position.x = THREE.MathUtils.clamp(ship.position.x, -laneWidth, laneWidth);
+  ship.position.y = THREE.MathUtils.clamp(ship.position.y, -laneHeight, laneHeight);
 }
 
-function resetGame() {
-  state.running = true;
+function updateHUD() {
+  dom.energyText.textContent = `${Math.max(0, Math.round(state.energy))}%`;
+  dom.routeText.textContent = `${Math.min(100, Math.round((state.route / routeTarget) * 100))}%`;
+  dom.speedText.textContent = `${Math.round(state.speed * 6.2)}`;
+  dom.crystalText.textContent = `${state.crystals}`;
+  dom.missionFill.style.width = `${Math.min(100, (state.route / routeTarget) * 100)}%`;
+}
+
+function finish(success) {
+  if (state.done) return;
+  state.running = false;
+  state.done = true;
+  dom.endOverlay.classList.add('visible');
+
+  dom.finalScore.textContent = String(Math.round(state.score)).padStart(6, '0');
+  dom.finalGates.textContent = String(state.gates);
+  dom.finalCrystals.textContent = String(state.crystals);
+
+  if (success) {
+    dom.endTitle.textContent = 'Rota concluída';
+    dom.endText.textContent = 'A nave estabilizou o corredor e concluiu o percurso.';
+  } else {
+    dom.endTitle.textContent = 'Energia esgotada';
+    dom.endText.textContent = 'O voo perdeu sustentação antes do fim da rota.';
+  }
+}
+
+function resetState() {
+  state.running = false;
   state.done = false;
   state.score = 0;
-  state.combo = 1;
-  state.maxCombo = 1;
+  state.speed = state.speedBase;
   state.energy = 100;
-  state.progress = 0;
-  state.phase = 1;
-  state.speedBase = 18;
-  state.speed = 18;
+  state.route = 0;
+  state.crystals = 0;
+  state.gates = 0;
   state.boost = 0;
-  state.gateCount = 0;
-  state.crystalCount = 0;
-  state.pulse = 0;
+  state.blink = 0;
 
   ship.position.set(0, 0, 0);
   ship.rotation.set(0, 0, 0);
-  camera.position.set(0, 0.85, 9.2);
-  world.rotation.z = 0;
-
-  gateData.forEach((gate, i) => resetGate(gate, -24 - i * 32));
-  crystalData.forEach((crystal, i) => resetCrystal(crystal, -18 - i * 24));
-  pulseData.forEach((pulse, i) => {
-    pulse.active = false;
-    pulse.life = 0;
-    pulse.mesh.material.opacity = 0;
-    pulse.mesh.position.z = -30 - i * 36;
-  });
-
-  input.x = 0;
-  input.y = 0;
-  input.boost = false;
-  Object.keys(input.keyboard).forEach((key) => { input.keyboard[key] = false; });
-  updateStickVisual(0, 0);
-  dom.boostBtn.classList.remove('active');
-  syncHUD();
+  resetObjectPositions();
+  updateHUD();
 }
 
-function endGame(win) {
-  state.running = false;
-  state.done = true;
-  dom.finalScore.textContent = String(Math.round(Math.max(0, state.score))).padStart(6, '0');
-  dom.finalGates.textContent = String(state.gateCount);
-  dom.finalCrystals.textContent = String(state.crystalCount);
-  dom.finalCombo.textContent = `x${state.maxCombo}`;
-  dom.endTitle.textContent = win ? 'Rota concluída' : 'Núcleo desestabilizado';
-  dom.endText.textContent = win
-    ? 'Você atravessou o corredor temporal com a nave estabilizada.'
-    : 'A energia acabou antes do fim da rota. Ajuste a trajetória e tente novamente.';
-  dom.endOverlay.classList.add('visible');
+function showGameplayUI(show) {
+  dom.hudIsland.classList.toggle('hidden', !show);
+  dom.controlsWrap.classList.toggle('hidden', !show);
+  dom.missionBarWrap.classList.toggle('hidden', !show);
 }
 
-function beginExperience() {
+function startExperience() {
+  resetState();
   dom.startOverlay.classList.remove('visible');
   dom.endOverlay.classList.remove('visible');
-  resetGame();
+  showGameplayUI(true);
+  state.running = true;
 }
 
-window.startExperience = beginExperience;
+window.startExperience = startExperience;
+dom.startBtn.addEventListener('click', startExperience);
+dom.startBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  startExperience();
+}, { passive: false });
+dom.restartBtn.addEventListener('click', startExperience);
+dom.restartBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  startExperience();
+}, { passive: false });
 
-const joystickState = { active: false, pointerId: null, centerX: 0, centerY: 0, radius: 40 };
-
-function updateStickVisual(x, y) {
-  const px = x * joystickState.radius;
-  const py = -y * joystickState.radius;
-  dom.stick.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
-}
-
-function currentInput() {
-  let x = input.x;
-  let y = input.y;
-  if (input.keyboard.left) x -= 1;
-  if (input.keyboard.right) x += 1;
-  if (input.keyboard.up) y += 1;
-  if (input.keyboard.down) y -= 1;
-  const len = Math.hypot(x, y);
-  if (len > 1) {
-    x /= len;
-    y /= len;
+async function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) await document.exitFullscreen();
+    return;
   }
-  return { x, y };
-}
-
-function setupJoystick() {
-  const setCenter = () => {
-    const rect = dom.joystick.getBoundingClientRect();
-    joystickState.centerX = rect.left + rect.width / 2;
-    joystickState.centerY = rect.top + rect.height / 2;
-    joystickState.radius = rect.width * 0.30;
-  };
-  setCenter();
-  window.addEventListener('resize', setCenter);
-
-  const onMove = (clientX, clientY) => {
-    let dx = clientX - joystickState.centerX;
-    let dy = clientY - joystickState.centerY;
-    const max = joystickState.radius;
-    const len = Math.hypot(dx, dy);
-    if (len > max && len > 0) {
-      dx = (dx / len) * max;
-      dy = (dy / len) * max;
-    }
-    input.x = dx / max;
-    input.y = -dy / max;
-    updateStickVisual(input.x, input.y);
-  };
-
-  const end = () => {
-    joystickState.active = false;
-    joystickState.pointerId = null;
-    input.x = 0;
-    input.y = 0;
-    updateStickVisual(0, 0);
-  };
-
-  dom.joystick.addEventListener('pointerdown', (e) => {
-    joystickState.active = true;
-    joystickState.pointerId = e.pointerId;
-    try { dom.joystick.setPointerCapture(e.pointerId); } catch (_) {}
-    setCenter();
-    onMove(e.clientX, e.clientY);
-  });
-  dom.joystick.addEventListener('pointermove', (e) => {
-    if (!joystickState.active) return;
-    if (joystickState.pointerId !== null && e.pointerId !== joystickState.pointerId) return;
-    onMove(e.clientX, e.clientY);
-  });
-  dom.joystick.addEventListener('pointerup', end);
-  dom.joystick.addEventListener('pointercancel', end);
-}
-
-function setupBoost() {
-  const press = () => {
-    input.boost = true;
-    dom.boostBtn.classList.add('active');
-  };
-  const release = () => {
-    input.boost = false;
-    dom.boostBtn.classList.remove('active');
-  };
-  ['pointerdown', 'touchstart'].forEach((evt) => dom.boostBtn.addEventListener(evt, press, { passive: true }));
-  ['pointerup', 'pointercancel', 'pointerleave', 'touchend', 'touchcancel'].forEach((evt) => dom.boostBtn.addEventListener(evt, release, { passive: true }));
-}
-
-function setupKeyboard() {
-  const map = {
-    ArrowLeft: 'left', KeyA: 'left',
-    ArrowRight: 'right', KeyD: 'right',
-    ArrowUp: 'up', KeyW: 'up',
-    ArrowDown: 'down', KeyS: 'down',
-  };
-
-  window.addEventListener('keydown', (e) => {
-    if (map[e.code]) input.keyboard[map[e.code]] = true;
-    if (e.code === 'Space') input.boost = true;
-  });
-  window.addEventListener('keyup', (e) => {
-    if (map[e.code]) input.keyboard[map[e.code]] = false;
-    if (e.code === 'Space') input.boost = false;
-  });
-}
-
-function setupFullscreen() {
-  async function toggle() {
-    if (document.fullscreenElement) {
-      if (document.exitFullscreen) await document.exitFullscreen();
-      return;
-    }
-    if (document.documentElement.requestFullscreen) {
-      try { await document.documentElement.requestFullscreen(); } catch (_) {}
+  if (dom.app.requestFullscreen) {
+    try {
+      await dom.app.requestFullscreen();
+    } catch {
+      // iPhone Safari often ignores this; fallback is using Home Screen launch.
     }
   }
-  dom.fullscreenBtn.addEventListener('click', toggle);
-  document.addEventListener('fullscreenchange', () => {
-    dom.fullscreenBtn.textContent = document.fullscreenElement ? 'Sair' : 'Tela cheia';
-  });
 }
 
-function setupOverlays() {
-  const triggerStart = (e) => {
-    if (e) e.preventDefault();
-    beginExperience();
-  };
-  dom.startBtn.addEventListener('click', triggerStart);
-  dom.startBtn.addEventListener('touchend', triggerStart, { passive: false });
-  dom.restartBtn.addEventListener('click', triggerStart);
-  dom.restartBtn.addEventListener('touchend', triggerStart, { passive: false });
-}
+dom.fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-function onResize() {
+function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 }
-window.addEventListener('resize', onResize);
+window.addEventListener('resize', resize);
 
-setupJoystick();
-setupBoost();
-setupKeyboard();
-setupFullscreen();
-setupOverlays();
-syncHUD();
+function updateStickVisual() {
+  dom.stick.style.transform = `translate(calc(-50% + ${input.x * 24}px), calc(-50% + ${input.y * 24}px))`;
+}
 
-function animateStars(dt, speed) {
-  for (const star of stars.children) {
-    star.position.z += speed * dt * 2.0;
-    if (star.position.z > 8) {
-      star.position.z = -220;
-      star.position.x = (Math.random() - 0.5) * 48;
-      star.position.y = (Math.random() - 0.5) * 28;
+let joyActive = false;
+let joyPointerId = null;
+let joyRect = null;
+
+function readJoystick(clientX, clientY) {
+  if (!joyRect) joyRect = dom.joystick.getBoundingClientRect();
+  const cx = joyRect.left + joyRect.width * 0.5;
+  const cy = joyRect.top + joyRect.height * 0.5;
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+  const radius = joyRect.width * 0.32;
+  const len = Math.hypot(dx, dy) || 1;
+  const clamped = Math.min(radius, len);
+  input.x = (dx / len) * (clamped / radius);
+  input.y = (dy / len) * (clamped / radius);
+  updateStickVisual();
+}
+
+dom.joystick.addEventListener('pointerdown', (e) => {
+  joyActive = true;
+  joyPointerId = e.pointerId;
+  joyRect = dom.joystick.getBoundingClientRect();
+  dom.joystick.setPointerCapture(e.pointerId);
+  readJoystick(e.clientX, e.clientY);
+});
+
+dom.joystick.addEventListener('pointermove', (e) => {
+  if (!joyActive || e.pointerId !== joyPointerId) return;
+  readJoystick(e.clientX, e.clientY);
+});
+
+function releaseJoystick(e) {
+  if (!joyActive || (e && e.pointerId !== joyPointerId)) return;
+  joyActive = false;
+  joyPointerId = null;
+  input.x = 0;
+  input.y = 0;
+  updateStickVisual();
+}
+
+dom.joystick.addEventListener('pointerup', releaseJoystick);
+dom.joystick.addEventListener('pointercancel', releaseJoystick);
+
+dom.boostBtn.addEventListener('pointerdown', () => { input.boost = true; });
+dom.boostBtn.addEventListener('pointerup', () => { input.boost = false; });
+dom.boostBtn.addEventListener('pointercancel', () => { input.boost = false; });
+dom.boostBtn.addEventListener('pointerleave', () => { input.boost = false; });
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.keyboard.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') input.keyboard.right = true;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') input.keyboard.up = true;
+  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') input.keyboard.down = true;
+  if (e.code === 'Space') input.boost = true;
+});
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.keyboard.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') input.keyboard.right = false;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') input.keyboard.up = false;
+  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') input.keyboard.down = false;
+  if (e.code === 'Space') input.boost = false;
+});
+
+function updateShip(dt, t) {
+  const kx = (input.keyboard.right ? 1 : 0) - (input.keyboard.left ? 1 : 0);
+  const ky = (input.keyboard.up ? 1 : 0) - (input.keyboard.down ? 1 : 0);
+  const tx = THREE.MathUtils.clamp(input.x + kx, -1, 1);
+  const ty = THREE.MathUtils.clamp(input.y - ky, -1, 1);
+
+  ship.position.x = THREE.MathUtils.lerp(ship.position.x, tx * laneWidth, 0.10);
+  ship.position.y = THREE.MathUtils.lerp(ship.position.y, -ty * laneHeight, 0.10);
+  clampShip();
+
+  ship.rotation.z = THREE.MathUtils.lerp(ship.rotation.z, -tx * 0.42, 0.10);
+  ship.rotation.x = THREE.MathUtils.lerp(ship.rotation.x, ship.position.y * 0.12, 0.10);
+  ship.rotation.y = THREE.MathUtils.lerp(ship.rotation.y, -tx * 0.12, 0.10);
+
+  const wantsBoost = input.boost;
+  state.boost = THREE.MathUtils.lerp(state.boost, wantsBoost ? 1 : 0, wantsBoost ? 0.08 : 0.04);
+  state.speed = THREE.MathUtils.lerp(state.speed, state.speedBase + state.boost * 14, 0.08);
+
+  const jetLen = 0.78 + state.boost * 0.75 + Math.sin(t * 16.0) * 0.05;
+  shipFx.jetA.scale.set(1, jetLen, 1);
+  shipFx.jetB.scale.set(1, jetLen, 1);
+  shipFx.trail.scale.set(1, 1 + state.boost * 0.7, 1 + state.boost * 0.8);
+  shipFx.halo.rotation.z += 0.02 + state.boost * 0.04;
+}
+
+function updateWorld(dt, t) {
+  const forward = state.speed * dt;
+  state.route += forward * 0.18;
+  state.energy -= dt * (1.8 + state.boost * 4.4);
+  state.score += forward * (1 + state.boost * 0.25);
+
+  corridor.children.forEach((ring, i) => {
+    ring.position.z += forward;
+    ring.rotation.z += 0.002 + i * 0.00005;
+    if (ring.position.z > 14) ring.position.z -= 200;
+  });
+
+  rails.children.forEach((rail) => {
+    rail.position.z += forward;
+    if (rail.position.z > 10) rail.position.z -= 200;
+  });
+
+  const starPositions = stars.geometry.attributes.position.array;
+  for (let i = 0; i < starPositions.length; i += 3) {
+    starPositions[i + 2] += forward * 0.9;
+    if (starPositions[i + 2] > 8) {
+      starPositions[i] = (Math.random() - 0.5) * 28;
+      starPositions[i + 1] = (Math.random() - 0.5) * 22;
+      starPositions[i + 2] = -200;
     }
-    const flicker = 0.6 + Math.sin(clock.elapsedTime * 1.6 + star.position.x) * 0.14;
-    star.material.opacity = 0.48 + flicker * 0.35;
-    star.lookAt(camera.position);
   }
-}
+  stars.geometry.attributes.position.needsUpdate = true;
 
-function updatePhases() {
-  if (state.progress > 72) state.phase = 3;
-  else if (state.progress > 36) state.phase = 2;
-  else state.phase = 1;
-}
+  gates.forEach((gate) => {
+    gate.position.z += forward;
+    gate.rotation.z += 0.01;
+    gate.material.opacity = 0.22 + (0.5 + 0.5 * Math.sin(t * 2.4 + gate.userData.pulse)) * 0.16;
 
-function succeedGate() {
-  state.gateCount += 1;
-  state.score += 160 * state.combo;
-  state.combo += 1;
-  state.maxCombo = Math.max(state.maxCombo, state.combo);
-  state.energy = Math.min(100, state.energy + 4.5);
-  state.pulse = 1;
-}
+    const dz = Math.abs(gate.position.z);
+    const dx = Math.abs(gate.position.x - ship.position.x);
+    const dy = Math.abs(gate.position.y - ship.position.y);
 
-function failGate() {
-  state.combo = 1;
-  state.energy = Math.max(0, state.energy - 10.5);
-}
+    if (!gate.userData.hit && dz < 0.85 && dx < 1.05 && dy < 1.05) {
+      gate.userData.hit = true;
+      state.gates += 1;
+      state.score += 220;
+      state.energy = Math.min(100, state.energy + 14);
+      state.blink = 1;
+    }
 
-function collectCrystal(rare) {
-  state.crystalCount += 1;
-  state.score += (rare ? 320 : 90) * state.combo;
-  state.energy = Math.min(100, state.energy + (rare ? 5.5 : 2.0));
-  state.pulse = 1;
-}
+    if (gate.position.z > 8) respawnGate(gate);
+  });
 
-function animateWorld(dt) {
-  const boostTarget = input.boost ? 1 : 0;
-  state.boost = THREE.MathUtils.lerp(state.boost, boostTarget, 0.08);
-  state.speed = THREE.MathUtils.lerp(state.speed, state.speedBase + state.boost * 12, 0.08);
-  state.progress = Math.min(100, state.progress + (state.speed * dt / courseLength) * 100);
-  updatePhases();
+  crystals.forEach((crystal) => {
+    crystal.position.z += forward;
+    crystal.rotation.x += 0.02 * crystal.userData.spin;
+    crystal.rotation.y += 0.03 * crystal.userData.spin;
+    crystal.position.y += Math.sin(t * crystal.userData.spin + crystal.position.x) * 0.004;
 
-  const control = currentInput();
-  const steer = state.phase >= 3 ? 5.0 : 4.3;
-  ship.position.x = THREE.MathUtils.clamp(ship.position.x + control.x * steer * dt, -laneWidth, laneWidth);
-  ship.position.y = THREE.MathUtils.clamp(ship.position.y + control.y * steer * dt, -laneHeight, laneHeight);
+    const dz = Math.abs(crystal.position.z);
+    const dx = Math.abs(crystal.position.x - ship.position.x);
+    const dy = Math.abs(crystal.position.y - ship.position.y);
 
-  ship.rotation.z = THREE.MathUtils.lerp(ship.rotation.z, -control.x * 0.34, 0.08);
-  ship.rotation.x = THREE.MathUtils.lerp(ship.rotation.x, control.y * 0.16 + state.boost * 0.08, 0.08);
-  ship.rotation.y = THREE.MathUtils.lerp(ship.rotation.y, -control.x * 0.12, 0.08);
+    if (!crystal.userData.hit && dz < 0.80 && dx < 0.48 && dy < 0.48) {
+      crystal.userData.hit = true;
+      state.crystals += 1;
+      state.score += 80;
+      state.energy = Math.min(100, state.energy + 6);
+      state.blink = 1;
+      respawnCrystal(crystal);
+    }
 
-  shipFx.halo.rotation.x += 0.026;
-  shipFx.halo.rotation.z += 0.018;
-  const thrusterLen = 1 + state.boost * 0.9 + state.pulse * 0.14;
-  shipFx.thrusterA.scale.set(1, thrusterLen, 1);
-  shipFx.thrusterB.scale.set(1, thrusterLen, 1);
-  shipFx.trailGlow.scale.set(1, 1 + state.boost * 1.1, 1 + state.boost * 0.2);
-  shipFx.trailGlow.material.opacity = 0.16 + state.boost * 0.24;
-
-  camera.position.x = THREE.MathUtils.lerp(camera.position.x, ship.position.x * 0.36, 0.05);
-  camera.position.y = THREE.MathUtils.lerp(camera.position.y, ship.position.y * 0.24 + 0.85, 0.05);
-  camera.position.z = THREE.MathUtils.lerp(camera.position.z, 9.2 - state.boost * 1.1, 0.05);
-  camera.lookAt(ship.position.x * 0.3, ship.position.y * 0.1, -7.5);
+    if (crystal.position.z > 8) respawnCrystal(crystal);
+  });
 
   bgUniforms.uBoost.value = state.boost;
-
-  corridor.children.forEach((child, index) => {
-    child.position.z += state.speed * dt;
-    if (child.position.z > 8) child.position.z -= 200;
-    if (child.material && 'opacity' in child.material) {
-      child.material.opacity = index % 2 === 0
-        ? 0.08 + state.phase * 0.02 + state.boost * 0.05
-        : 0.05 + state.phase * 0.015 + state.boost * 0.03;
-    }
-  });
-
-  gateData.forEach((gate) => {
-    gate.group.position.z += state.speed * dt;
-    gate.group.rotation.z += dt * 0.9;
-    gate.ring.material.opacity = 0.34 + state.phase * 0.05 + state.boost * 0.08;
-    gate.halo.material.opacity = 0.14 + state.phase * 0.03;
-
-    if (!gate.passed && gate.group.position.z > -0.3) {
-      const dist = Math.hypot(ship.position.x - gate.group.position.x, ship.position.y - gate.group.position.y);
-      if (dist <= gate.radius * 0.86) succeedGate();
-      else failGate();
-      gate.passed = true;
-      emitPulse(gate.group.position.z - 1.2);
-    }
-
-    if (gate.group.position.z > 8) resetGate(gate, -190 - Math.random() * 40);
-  });
-
-  crystalData.forEach((crystal) => {
-    crystal.group.position.z += state.speed * dt;
-    crystal.group.rotation.x += dt * crystal.spin * 0.7;
-    crystal.group.rotation.y += dt * crystal.spin;
-    crystal.group.position.y += Math.sin(clock.elapsedTime * 2 + crystal.bobSeed) * 0.002;
-
-    if (!crystal.collected) {
-      const dx = ship.position.x - crystal.group.position.x;
-      const dy = ship.position.y - crystal.group.position.y;
-      const dz = crystal.group.position.z - ship.position.z;
-      if (Math.hypot(dx, dy, dz) < (crystal.rare ? 0.74 : 0.56)) {
-        crystal.collected = true;
-        crystal.group.visible = false;
-        collectCrystal(crystal.rare);
-      }
-    }
-
-    if (crystal.group.position.z > 8) resetCrystal(crystal, -190 - Math.random() * 40);
-  });
-
-  pulseData.forEach((pulse) => {
-    if (!pulse.active) return;
-    pulse.life += dt;
-    pulse.mesh.position.z += state.speed * dt * 1.06;
-    pulse.mesh.scale.setScalar(1 + pulse.life * 3.5);
-    pulse.mesh.material.opacity = Math.max(0, 0.35 - pulse.life * 0.55);
-    if (pulse.mesh.position.z > 8 || pulse.mesh.material.opacity <= 0.01) {
-      pulse.active = false;
-      pulse.mesh.material.opacity = 0;
-    }
-  });
-
-  state.energy = Math.max(0, Math.min(100, state.energy - dt * (2.25 - state.boost * 0.45)));
-  state.pulse = THREE.MathUtils.lerp(state.pulse, 0, 0.08);
-  world.rotation.z = THREE.MathUtils.lerp(world.rotation.z, ship.rotation.z * 0.10, 0.04);
 }
 
-function loop() {
-  requestAnimationFrame(loop);
-  const dt = Math.min(clock.getDelta(), 0.032);
-  bgUniforms.uTime.value = clock.elapsedTime;
+function updateCamera(dt) {
+  const targetX = ship.position.x * 0.20;
+  const targetY = ship.position.y * 0.16 + 0.72;
+  const targetZ = 8.25 - state.boost * 0.55;
+  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.06);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.06);
+  camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.06);
+  camera.lookAt(ship.position.x * 0.25, ship.position.y * 0.16, -3.6);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.033);
+  const t = clock.elapsedTime;
+
+  bgUniforms.uTime.value = t;
+  state.blink = THREE.MathUtils.lerp(state.blink, 0, 0.08);
 
   if (state.running) {
-    animateWorld(dt);
-    animateStars(dt, state.speed);
-    syncHUD();
-    if (state.energy <= 0) endGame(false);
-    else if (state.progress >= 100) endGame(true);
+    updateShip(dt, t);
+    updateWorld(dt, t);
+    updateCamera(dt);
+    updateHUD();
+
+    if (state.route >= routeTarget) finish(true);
+    if (state.energy <= 0) finish(false);
   } else {
-    animateStars(dt, 10);
-    ship.rotation.y += dt * 0.35;
-    shipFx.halo.rotation.x += 0.02;
-    shipFx.halo.rotation.z += 0.015;
-    camera.lookAt(0, 0, -7);
+    ship.rotation.y += 0.005;
+    ship.position.y = Math.sin(t * 1.6) * 0.08;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.05);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0.76, 0.05);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, 8.4, 0.05);
+    camera.lookAt(0, 0, -4.0);
   }
 
+  const flash = 1 + state.blink * 0.06;
+  ship.scale.setScalar(flash);
   renderer.render(scene, camera);
 }
 
-loop();
+resetState();
+showGameplayUI(false);
+animate();

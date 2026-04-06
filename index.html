@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Chrono Core" />
+  <title>Chrono Core V2</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="ui-shell">
+    <header class="topbar">
+      <div class="brand-card glass">
+        <div class="eyebrow">THREE.JS MOBILE EXPERIENCE</div>
+        <h1>Chrono Core</h1>
+        <p>Toque nos fragmentos para energizar o núcleo antes que o tempo acabe.</p>
+      </div>
+
+      <div class="actions">
+        <button id="fullscreenBtn" class="ui-button" type="button">Tela cheia</button>
+      </div>
+    </header>
+
+    <section class="hud glass">
+      <div class="hud-block">
+        <span class="hud-label">Pontuação</span>
+        <strong id="scoreValue">000000</strong>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">Combo</span>
+        <strong id="comboValue">x1</strong>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">Tempo</span>
+        <strong id="timeValue">45.0s</strong>
+      </div>
+      <div class="hud-block energy-block">
+        <span class="hud-label">Carga do núcleo</span>
+        <div class="meter-track">
+          <div id="energyFill" class="meter-fill"></div>
+        </div>
+        <strong id="energyValue">0%</strong>
+      </div>
+    </section>
+
+    <section class="objective glass">
+      <div class="objective-line">
+        <span>Objetivo</span>
+        <strong id="objectiveText">Alcance 100% de energia</strong>
+      </div>
+      <div class="objective-line muted">
+        <span>Dica</span>
+        <strong id="statusText">Arraste para inclinar a câmera. Toque rápido nos alvos para subir o combo.</strong>
+      </div>
+    </section>
+
+    <section class="bottom-strip">
+      <div class="phase-chip glass">Fase <strong id="phaseValue">01</strong></div>
+      <div class="pulse-chip glass">Sequência <strong id="streakValue">0</strong></div>
+    </section>
+  </div>
+
+  <div id="startOverlay" class="overlay visible">
+    <div class="overlay-card glass strong">
+      <div class="eyebrow">V2 / GAMIFIED SHOWCASE</div>
+      <h2>Ative o núcleo temporal</h2>
+      <p>
+        Você tem 45 segundos para coletar energia tocando nos fragmentos 3D.
+        Acertos em sequência aumentam o combo, liberam pulsos visuais e aceleram o portal.
+      </p>
+      <ul>
+        <li>Toque nos fragmentos brilhantes</li>
+        <li>Arraste para mudar o enquadramento</li>
+        <li>Encha a barra até 100% para vencer</li>
+      </ul>
+      <div class="overlay-actions">
+        <button id="startBtn" class="ui-button primary" type="button">Iniciar missão</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="endOverlay" class="overlay">
+    <div class="overlay-card glass strong">
+      <div class="eyebrow" id="endEyebrow">MISSÃO ENCERRADA</div>
+      <h2 id="endTitle">Resultado</h2>
+      <p id="endMessage"></p>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span>Pontuação final</span>
+          <strong id="endScore">0</strong>
+        </div>
+        <div class="summary-item">
+          <span>Maior combo</span>
+          <strong id="endCombo">x1</strong>
+        </div>
+        <div class="summary-item">
+          <span>Carga alcançada</span>
+          <strong id="endEnergy">0%</strong>
+        </div>
+      </div>
+      <div class="overlay-actions">
+        <button id="restartBtn" class="ui-button primary" type="button">Jogar novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

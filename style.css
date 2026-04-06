@@ -1,0 +1,365 @@
+:root {
+  color-scheme: dark;
+  --bg-1: #03050c;
+  --bg-2: #0a1330;
+  --panel: rgba(6, 11, 24, 0.46);
+  --panel-strong: rgba(6, 11, 24, 0.72);
+  --line: rgba(255, 255, 255, 0.14);
+  --text: rgba(255, 255, 255, 0.96);
+  --muted: rgba(255, 255, 255, 0.7);
+  --accent-a: #78f4ff;
+  --accent-b: #ff57d8;
+  --accent-c: #6a7dff;
+  --success: #86ffbb;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(70, 120, 255, 0.18), transparent 25%),
+    radial-gradient(circle at 80% 25%, rgba(255, 65, 205, 0.18), transparent 22%),
+    linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  touch-action: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+}
+
+#app,
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.glass.strong {
+  background: var(--panel-strong);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top)) 14px 0 14px;
+}
+
+.brand-card {
+  pointer-events: auto;
+  width: min(75vw, 360px);
+  border-radius: 24px;
+  padding: 14px 16px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.brand-card h1,
+.overlay-card h2 {
+  margin: 0;
+  font-size: clamp(24px, 5vw, 34px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.brand-card p,
+.overlay-card p,
+.overlay-card li {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.actions {
+  pointer-events: auto;
+}
+
+.ui-button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: white;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+  border-radius: 18px;
+  padding: 13px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.ui-button.primary {
+  background: linear-gradient(135deg, rgba(120, 244, 255, 0.28), rgba(255, 87, 216, 0.28));
+  border-color: rgba(255,255,255,0.24);
+}
+
+.ui-button:active {
+  transform: scale(0.98);
+}
+
+.hud {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  top: calc(108px + env(safe-area-inset-top));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  border-radius: 22px;
+  padding: 12px;
+}
+
+.hud-block {
+  min-width: 0;
+}
+
+.hud-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.hud strong {
+  font-size: clamp(18px, 3.8vw, 26px);
+  letter-spacing: -0.03em;
+}
+
+.energy-block {
+  grid-column: span 1;
+}
+
+.meter-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 8px;
+}
+
+.meter-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  box-shadow: 0 0 25px rgba(120, 244, 255, 0.45);
+}
+
+.objective {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  border-radius: 20px;
+  padding: 12px 14px;
+}
+
+.objective-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.objective-line + .objective-line {
+  margin-top: 8px;
+}
+
+.objective-line span {
+  color: var(--muted);
+}
+
+.objective-line strong {
+  text-align: right;
+}
+
+.objective-line.muted strong {
+  color: rgba(255,255,255,0.86);
+  font-weight: 600;
+}
+
+.bottom-strip {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.phase-chip,
+.pulse-chip {
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+
+.phase-chip strong,
+.pulse-chip strong {
+  margin-left: 4px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at center, rgba(10, 18, 42, 0.28), rgba(1, 3, 8, 0.82));
+}
+
+.overlay.visible {
+  display: flex;
+}
+
+.overlay-card {
+  width: min(92vw, 520px);
+  border-radius: 28px;
+  padding: 22px;
+}
+
+.overlay-card ul {
+  margin: 14px 0 0;
+  padding-left: 18px;
+}
+
+.overlay-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.summary-item {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.summary-item span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.summary-item strong {
+  font-size: 20px;
+}
+
+@media (max-width: 760px) {
+  .brand-card {
+    width: min(64vw, 300px);
+  }
+
+  .hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    top: calc(118px + env(safe-area-inset-top));
+  }
+
+  .energy-block {
+    grid-column: span 2;
+  }
+
+  .objective {
+    bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+
+  .objective-line {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .objective-line strong {
+    text-align: left;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 8px;
+  }
+
+  .brand-card {
+    padding: 12px 13px;
+    border-radius: 20px;
+  }
+
+  .hud,
+  .objective,
+  .bottom-strip {
+    left: 10px;
+    right: 10px;
+  }
+
+  .bottom-strip {
+    gap: 8px;
+  }
+
+  .phase-chip,
+  .pulse-chip {
+    padding: 9px 12px;
+  }
+
+  .ui-button {
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+}

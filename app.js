@@ -12,10 +12,12 @@ const comboValue = document.getElementById("comboValue");
 const timeValue = document.getElementById("timeValue");
 const energyValue = document.getElementById("energyValue");
 const energyFill = document.getElementById("energyFill");
+const phaseLabel = document.getElementById("phaseLabel");
 const objectiveText = document.getElementById("objectiveText");
 const statusText = document.getElementById("statusText");
-const phaseValue = document.getElementById("phaseValue");
 const streakValue = document.getElementById("streakValue");
+const bonusValue = document.getElementById("bonusValue");
+const statusToast = document.getElementById("statusToast");
 
 const endEyebrow = document.getElementById("endEyebrow");
 const endTitle = document.getElementById("endTitle");
@@ -33,39 +35,38 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 1.18;
 app.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x050714, 0.042);
+scene.fog = new THREE.FogExp2(0x050815, 0.045);
 
-const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0.4, 8.5);
+const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 120);
+camera.position.set(0, 0.2, 8.6);
 
 const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
-const pointerNdc = new THREE.Vector2(0, 0);
-const tempVec3 = new THREE.Vector3();
+const pointerNdc = new THREE.Vector2();
 
 const world = new THREE.Group();
 const pivot = new THREE.Group();
-world.add(pivot);
 scene.add(world);
+world.add(pivot);
 
-const ambient = new THREE.AmbientLight(0x6d7cff, 0.9);
+const ambient = new THREE.AmbientLight(0x8ba1ff, 0.8);
 scene.add(ambient);
 
-const keyLight = new THREE.DirectionalLight(0x83faff, 3.2);
+const keyLight = new THREE.DirectionalLight(0x89ffff, 3.3);
 keyLight.position.set(5, 4, 5);
 scene.add(keyLight);
 
-const rimLight = new THREE.DirectionalLight(0xff4bc8, 2.5);
-rimLight.position.set(-4, -2, 3);
+const rimLight = new THREE.DirectionalLight(0xff67d9, 2.6);
+rimLight.position.set(-5, -3, 4);
 scene.add(rimLight);
 
-const fillLight = new THREE.PointLight(0x7185ff, 4, 18, 2);
-fillLight.position.set(0, 0, 2.5);
-scene.add(fillLight);
+const glowLight = new THREE.PointLight(0x6d88ff, 5.4, 18, 2);
+glowLight.position.set(0, 0, 2.4);
+scene.add(glowLight);
 
 const bgUniforms = {
   uTime: { value: 0 },
@@ -99,7 +100,6 @@ const bgMaterial = new THREE.ShaderMaterial({
       vec3 i = floor(x);
       vec3 f = fract(x);
       f = f * f * (3.0 - 2.0 * f);
-
       float n000 = hash(i + vec3(0.0, 0.0, 0.0));
       float n100 = hash(i + vec3(1.0, 0.0, 0.0));
       float n010 = hash(i + vec3(0.0, 1.0, 0.0));
@@ -108,7 +108,6 @@ const bgMaterial = new THREE.ShaderMaterial({
       float n101 = hash(i + vec3(1.0, 0.0, 1.0));
       float n011 = hash(i + vec3(0.0, 1.0, 1.0));
       float n111 = hash(i + vec3(1.0, 1.0, 1.0));
-
       float nx00 = mix(n000, n100, f.x);
       float nx10 = mix(n010, n110, f.x);
       float nx01 = mix(n001, n101, f.x);
@@ -121,31 +120,28 @@ const bgMaterial = new THREE.ShaderMaterial({
     void main() {
       vec3 d = normalize(vDir);
       float t = uTime * 0.045;
-      float n1 = noise(d * 4.5 + vec3(t, -t * 1.4, t * 0.8));
-      float n2 = noise(d * 10.0 + vec3(-t * 0.7, t * 0.6, -t));
-      float nebula = smoothstep(0.3, 0.92, n1 * 0.72 + n2 * 0.45);
-      float horizon = pow(1.0 - abs(d.y), 2.1);
-      float arc = 0.5 + 0.5 * sin(atan(d.z, d.x) * 6.0 + uTime * 0.35 + d.y * 3.0);
-      float energized = smoothstep(0.0, 1.0, uEnergy);
+      float n1 = noise(d * 4.2 + vec3(t, -t * 1.3, t * 0.7));
+      float n2 = noise(d * 8.8 + vec3(-t * 0.9, t * 0.5, -t));
+      float nebula = smoothstep(0.32, 0.95, n1 * 0.75 + n2 * 0.5);
+      float horizon = pow(1.0 - abs(d.y), 2.0);
+      float arc = 0.5 + 0.5 * sin(atan(d.z, d.x) * 6.0 + uTime * 0.4 + d.y * 3.2);
+      float energy = smoothstep(0.0, 1.0, uEnergy);
 
-      vec3 deep = vec3(0.02, 0.03, 0.08);
-      vec3 blue = vec3(0.06, 0.14, 0.34);
-      vec3 cyan = vec3(0.04, 0.53, 0.85);
+      vec3 deep = vec3(0.015, 0.025, 0.06);
+      vec3 blue = vec3(0.05, 0.12, 0.30);
+      vec3 cyan = vec3(0.03, 0.55, 0.90);
       vec3 pink = vec3(0.78, 0.08, 0.64);
-      vec3 aurora = mix(cyan, pink, arc);
-
       vec3 color = mix(deep, blue, horizon);
-      color += aurora * horizon * (0.18 + energized * 0.35);
-      color += vec3(0.20, 0.62, 1.0) * nebula * (0.16 + energized * 0.18);
-      color += vec3(1.00, 0.22, 0.82) * nebula * horizon * (0.06 + energized * 0.12);
+      color += mix(cyan, pink, arc) * horizon * (0.16 + energy * 0.34);
+      color += vec3(0.14, 0.56, 1.0) * nebula * (0.16 + energy * 0.16);
+      color += vec3(1.0, 0.24, 0.82) * nebula * horizon * (0.05 + energy * 0.12);
 
       gl_FragColor = vec4(color, 1.0);
     }
   `
 });
 
-const bgSphere = new THREE.Mesh(new THREE.SphereGeometry(45, 64, 64), bgMaterial);
-scene.add(bgSphere);
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(48, 64, 64), bgMaterial));
 
 const portalUniforms = {
   uTime: { value: 0 },
@@ -181,53 +177,65 @@ const portalMaterial = new THREE.ShaderMaterial({
       vec3 N = normalize(vNormalW);
       vec3 V = normalize(cameraPosition - vWorldPos);
       float fresnel = pow(1.0 - abs(dot(N, V)), 3.2);
-      float ang = atan(vWorldPos.y, vWorldPos.x);
-      float bands = 0.5 + 0.5 * sin(ang * 11.0 + uTime * (2.8 + uEnergy * 2.3));
-      float electric = 0.5 + 0.5 * sin(vWorldPos.z * 10.0 - uTime * 4.0 + ang * 7.0);
-      vec3 a = vec3(0.05, 0.52, 1.0);
+      float angle = atan(vWorldPos.y, vWorldPos.x);
+      float bands = 0.5 + 0.5 * sin(angle * 12.0 + uTime * (2.8 + uEnergy * 2.8));
+      float electric = 0.5 + 0.5 * sin(vWorldPos.z * 9.0 - uTime * 4.2 + angle * 6.6);
+      vec3 a = vec3(0.05, 0.54, 1.0);
       vec3 b = vec3(1.0, 0.15, 0.80);
       vec3 c = vec3(0.48, 1.0, 0.98);
       vec3 color = mix(a, b, bands);
       color = mix(color, c, electric * 0.45);
-      color *= 0.55 + fresnel * 1.9 + uPulse * 1.25 + uEnergy * 0.8;
-      float alpha = 0.16 + fresnel * 0.76 + bands * 0.08 + uPulse * 0.12 + uEnergy * 0.08;
+      color *= 0.58 + fresnel * 1.95 + uPulse * 1.3 + uEnergy * 0.9;
+      float alpha = 0.12 + fresnel * 0.76 + bands * 0.08 + uPulse * 0.14 + uEnergy * 0.1;
       gl_FragColor = vec4(color, alpha);
     }
   `
 });
 
-const ringA = new THREE.Mesh(new THREE.TorusGeometry(2.8, 0.13, 40, 240), portalMaterial);
-ringA.rotation.x = 1.12;
-ringA.rotation.y = 0.18;
+const ringA = new THREE.Mesh(new THREE.TorusGeometry(2.55, 0.11, 40, 240), portalMaterial);
+ringA.rotation.x = 1.08;
+ringA.rotation.y = 0.16;
 pivot.add(ringA);
 
 const ringB = new THREE.Mesh(
-  new THREE.TorusGeometry(3.25, 0.035, 20, 220),
+  new THREE.TorusGeometry(3.0, 0.03, 20, 220),
   new THREE.MeshBasicMaterial({
     color: 0x8ef8ff,
-    transparent: true,
-    opacity: 0.25,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  })
-);
-ringB.rotation.x = -1.05;
-ringB.rotation.z = 0.42;
-pivot.add(ringB);
-
-const ringC = new THREE.Mesh(
-  new THREE.TorusGeometry(2.25, 0.02, 20, 180),
-  new THREE.MeshBasicMaterial({
-    color: 0xff62d4,
     transparent: true,
     opacity: 0.24,
     blending: THREE.AdditiveBlending,
     depthWrite: false
   })
 );
-ringC.rotation.y = 1.08;
-ringC.rotation.x = 0.45;
+ringB.rotation.x = -1.05;
+ringB.rotation.z = 0.44;
+pivot.add(ringB);
+
+const ringC = new THREE.Mesh(
+  new THREE.TorusGeometry(2.15, 0.022, 20, 180),
+  new THREE.MeshBasicMaterial({
+    color: 0xff60d8,
+    transparent: true,
+    opacity: 0.24,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
+ringC.rotation.y = 1.15;
+ringC.rotation.x = 0.48;
 pivot.add(ringC);
+
+const haloMaterial = new THREE.MeshBasicMaterial({
+  color: 0x82f7ff,
+  transparent: true,
+  opacity: 0.1,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+const halo = new THREE.Mesh(new THREE.CircleGeometry(2.85, 64), haloMaterial);
+halo.rotation.x = -Math.PI * 0.5;
+halo.position.y = -1.1;
+pivot.add(halo);
 
 const coreUniforms = {
   uTime: { value: 0 },
@@ -248,10 +256,10 @@ const coreMaterial = new THREE.ShaderMaterial({
 
     void main() {
       float wobble =
-        sin(position.y * 7.0 + uTime * 1.7) * 0.03 +
-        sin(position.x * 9.0 - uTime * 1.2) * 0.025 +
-        sin(position.z * 8.0 + uTime * 1.5) * 0.02;
-      wobble *= 1.0 + uEnergy * 0.6 + uPulse * 0.4;
+        sin(position.y * 7.0 + uTime * 1.9) * 0.03 +
+        sin(position.x * 9.0 - uTime * 1.3) * 0.026 +
+        sin(position.z * 8.0 + uTime * 1.5) * 0.022;
+      wobble *= 1.0 + uEnergy * 0.7 + uPulse * 0.55;
       vec3 displaced = position + normal * wobble;
       vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
       vWorldPos = worldPos.xyz;
@@ -273,258 +281,183 @@ const coreMaterial = new THREE.ShaderMaterial({
     void main() {
       vec3 N = normalize(vNormalW);
       vec3 V = normalize(cameraPosition - vWorldPos);
-      float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.8);
-      float iri = 0.5 + 0.5 * sin(N.y * 7.0 + N.x * 4.0 + uTime * 1.4 + vWave * 18.0);
-      float stripe = 0.5 + 0.5 * sin((N.z + N.x) * 12.0 - uTime * (1.8 + uEnergy * 1.6));
+      float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.9);
+      float iri = 0.5 + 0.5 * sin(N.y * 7.0 + N.x * 4.2 + uTime * 1.5 + vWave * 18.0);
+      float stripe = 0.5 + 0.5 * sin((N.z + N.x) * 12.0 - uTime * (1.7 + uEnergy * 1.6));
       vec3 deepBlue = vec3(0.07, 0.28, 0.96);
       vec3 magenta = vec3(0.98, 0.20, 0.78);
       vec3 cyan = vec3(0.20, 0.98, 1.00);
       vec3 color = mix(deepBlue, magenta, iri);
-      color = mix(color, cyan, stripe * 0.45);
-      color *= 0.62 + fresnel * 1.35 + uPulse * 0.18 + uEnergy * 0.45;
-      color += vec3(1.0) * fresnel * (0.32 + uEnergy * 0.16);
-      gl_FragColor = vec4(color, 0.96);
+      color = mix(color, cyan, stripe * 0.42);
+      color *= 0.62 + fresnel * 1.35 + uPulse * 0.24 + uEnergy * 0.5;
+      color += vec3(1.0) * fresnel * (0.28 + uEnergy * 0.22);
+      gl_FragColor = vec4(color, 0.98);
     }
   `
 });
 
-const coreGeo = new THREE.IcosahedronGeometry(1.34, 4);
+const coreGeo = new THREE.IcosahedronGeometry(1.18, 5);
 const core = new THREE.Mesh(coreGeo, coreMaterial);
 pivot.add(core);
 
 const wire = new THREE.LineSegments(
   new THREE.WireframeGeometry(coreGeo),
-  new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.16
-  })
+  new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 })
 );
-wire.scale.setScalar(1.05);
+wire.scale.setScalar(1.055);
 pivot.add(wire);
 
-const innerCoreMaterial = new THREE.ShaderMaterial({
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-  uniforms: coreUniforms,
-  vertexShader: `
-    varying vec3 vPos;
-    void main() {
-      vPos = position;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    precision highp float;
-    varying vec3 vPos;
-    uniform float uTime;
-    uniform float uEnergy;
-    uniform float uPulse;
-
-    void main() {
-      float r = length(vPos);
-      float glow = smoothstep(0.78, 0.0, r);
-      float pulse = 0.5 + 0.5 * sin(uTime * (4.0 + uEnergy * 4.0) + r * 12.0);
-      vec3 color = mix(vec3(0.2, 0.7, 1.0), vec3(1.0, 0.15, 0.7), pulse);
-      color *= glow * (1.0 + uPulse * 1.1 + uEnergy * 0.55);
-      gl_FragColor = vec4(color, glow * 0.92);
-    }
-  `
-});
-
-const innerCore = new THREE.Mesh(new THREE.SphereGeometry(0.76, 42, 42), innerCoreMaterial);
+const innerCore = new THREE.Mesh(
+  new THREE.SphereGeometry(0.72, 36, 36),
+  new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: coreUniforms,
+    vertexShader: `
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      varying vec3 vPos;
+      uniform float uTime;
+      uniform float uEnergy;
+      uniform float uPulse;
+      void main() {
+        float r = length(vPos);
+        float glow = smoothstep(0.78, 0.0, r);
+        float pulse = 0.5 + 0.5 * sin(uTime * (4.0 + uEnergy * 4.0) + r * 12.0);
+        vec3 color = mix(vec3(0.2, 0.7, 1.0), vec3(1.0, 0.15, 0.7), pulse);
+        color *= glow * (1.0 + uPulse * 1.2 + uEnergy * 0.6);
+        gl_FragColor = vec4(color, glow * 0.94);
+      }
+    `
+  })
+);
 pivot.add(innerCore);
 
-const beamMaterial = new THREE.MeshBasicMaterial({
-  color: 0x87f7ff,
-  transparent: true,
-  opacity: 0.09,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false
-});
-const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 1.25, 5.8, 32, 1, true), beamMaterial);
+const beam = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.16, 1.15, 6.0, 32, 1, true),
+  new THREE.MeshBasicMaterial({
+    color: 0x8af7ff,
+    transparent: true,
+    opacity: 0.08,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
 beam.rotation.z = Math.PI * 0.5;
 pivot.add(beam);
 
-const stars = createStarField(2600, 7.5, 24.0, 0.055);
-scene.add(stars);
+const reticle = new THREE.Mesh(
+  new THREE.TorusGeometry(1.58, 0.012, 12, 100),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.12,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
+reticle.rotation.x = Math.PI * 0.5;
+pivot.add(reticle);
+
+scene.add(createStarField(2600, 8.0, 25.0, 0.055));
 const mist = createStarField(1200, 3.0, 6.5, 0.04, true);
 pivot.add(mist);
 
-const orbiterGroup = new THREE.Group();
-pivot.add(orbiterGroup);
-const orbs = [];
+const trailGroup = new THREE.Group();
+pivot.add(trailGroup);
 for (let i = 0; i < 3; i++) {
-  const orb = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.18 + i * 0.03),
-    new THREE.MeshStandardMaterial({
-      color: [0x8df6ff, 0xff85dc, 0xa9b3ff][i],
-      emissive: [0x4edfff, 0xff4bd0, 0x6277ff][i],
-      emissiveIntensity: 0.8,
-      roughness: 0.35,
-      metalness: 0.75
+  const trail = new THREE.Mesh(
+    new THREE.TorusGeometry(2.0 + i * 0.42, 0.008, 8, 160),
+    new THREE.MeshBasicMaterial({
+      color: i % 2 === 0 ? 0x88f8ff : 0xff61d6,
+      transparent: true,
+      opacity: 0.14 - i * 0.025,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     })
   );
-  orbiterGroup.add(orb);
-  orbs.push(orb);
+  trail.rotation.x = 1.12 + i * 0.2;
+  trail.rotation.z = i * 0.6;
+  trailGroup.add(trail);
 }
 
 const targetGroup = new THREE.Group();
 pivot.add(targetGroup);
 const targets = [];
-const targetCount = 7;
-const targetPalette = [0x7ef7ff, 0xff68d4, 0xaab6ff, 0x86ffb8];
-const targetGeometries = [
-  new THREE.OctahedronGeometry(0.24, 0),
-  new THREE.TetrahedronGeometry(0.28, 0),
-  new THREE.IcosahedronGeometry(0.22, 0)
-];
+const targetRaycastables = [];
+createTargets();
 
-for (let i = 0; i < targetCount; i++) {
-  const root = new THREE.Group();
-  root.userData.isTarget = true;
-  root.userData.baseScale = 1;
-  root.userData.collectAnim = 0;
-  root.userData.t = Math.random() * Math.PI * 2;
-  root.userData.radius = 2.5 + Math.random() * 1.25;
-  root.userData.yAmp = 0.7 + Math.random() * 0.55;
-  root.userData.speed = 0.35 + Math.random() * 0.45;
-  root.userData.seed = Math.random() * 10;
-  root.userData.value = 8 + Math.floor(Math.random() * 5);
+let running = false;
+let gameStartedOnce = false;
+let timeLeft = 50;
+let score = 0;
+let combo = 1;
+let bestCombo = 1;
+let streak = 0;
+let energy = 0;
+let phase = 1;
+let pulse = 0;
+let toastTimer = 0;
+let totalHits = 0;
+let bonusActive = false;
+let bonusTimer = 0;
 
-  const body = new THREE.Mesh(
-    targetGeometries[i % targetGeometries.length],
-    new THREE.MeshStandardMaterial({
-      color: targetPalette[i % targetPalette.length],
-      emissive: targetPalette[i % targetPalette.length],
-      emissiveIntensity: 0.95,
-      roughness: 0.28,
-      metalness: 0.65
-    })
-  );
-  root.add(body);
+let cameraRotX = 0;
+let cameraRotY = 0;
+let targetCameraRotX = 0;
+let targetCameraRotY = 0;
+let dragActive = false;
+let downX = 0;
+let downY = 0;
+let moved = false;
 
-  const shell = new THREE.Mesh(
-    new THREE.SphereGeometry(0.34, 20, 20),
-    new THREE.MeshBasicMaterial({
-      color: targetPalette[(i + 1) % targetPalette.length],
-      transparent: true,
-      opacity: 0.12,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    })
-  );
-  root.add(shell);
-
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(0.42, 0.02, 10, 60),
-    new THREE.MeshBasicMaterial({
-      color: targetPalette[i % targetPalette.length],
-      transparent: true,
-      opacity: 0.3,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    })
-  );
-  halo.rotation.x = Math.PI / 2;
-  root.add(halo);
-
-  root.userData.body = body;
-  root.userData.shell = shell;
-  root.userData.halo = halo;
-
-  targetGroup.add(root);
-  targets.push(root);
-}
-
-const burstParticles = [];
-const burstGeometry = new THREE.SphereGeometry(0.035, 8, 8);
-
-function createBurst(color = 0xffffff) {
-  const mesh = new THREE.Mesh(
-    burstGeometry,
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    })
-  );
-  mesh.visible = false;
-  scene.add(mesh);
-  burstParticles.push({
-    mesh,
-    velocity: new THREE.Vector3(),
-    life: 0,
-    maxLife: 0
-  });
-}
-
-for (let i = 0; i < 42; i++) createBurst();
-
-const game = {
-  state: "idle",
-  duration: 45,
-  timer: 45,
-  score: 0,
-  combo: 1,
-  streak: 0,
-  bestCombo: 1,
-  energy: 0,
-  pulse: 0,
-  phase: 1,
-  missFlash: 0,
-  overdrive: 0
-};
-
-const interaction = {
-  isDown: false,
-  dragging: false,
-  downX: 0,
-  downY: 0,
-  targetRotX: 0,
-  targetRotY: 0,
-  rotX: 0,
-  rotY: 0,
-  autoRotY: 0
-};
-
-function createStarField(count, minR, maxR, size, local = false) {
+function createStarField(count, minR, maxR, size, near = false) {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
 
   for (let i = 0; i < count; i++) {
+    const idx = i * 3;
     const p = randomSpherePoint(minR, maxR);
-    const i3 = i * 3;
-    positions[i3] = p.x;
-    positions[i3 + 1] = p.y;
-    positions[i3 + 2] = p.z;
+    positions[idx] = p.x;
+    positions[idx + 1] = p.y;
+    positions[idx + 2] = p.z;
 
-    const palette = [
-      [0.52, 0.88, 1.0],
-      [1.0, 0.44, 0.86],
-      [0.70, 0.74, 1.0],
-      [1.0, 1.0, 1.0]
-    ][Math.floor(Math.random() * 4)];
-
-    colors[i3] = palette[0];
-    colors[i3 + 1] = palette[1];
-    colors[i3 + 2] = palette[2];
+    const palettes = near
+      ? [
+          [0.56, 0.92, 1.0],
+          [1.0, 0.52, 0.88],
+          [1.0, 0.84, 0.44]
+        ]
+      : [
+          [0.56, 0.92, 1.0],
+          [1.0, 0.52, 0.88],
+          [0.72, 0.76, 1.0],
+          [1.0, 1.0, 1.0]
+        ];
+    const palette = palettes[Math.floor(Math.random() * palettes.length)];
+    colors[idx] = palette[0];
+    colors[idx + 1] = palette[1];
+    colors[idx + 2] = palette[2];
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
   return new THREE.Points(
-    geometry,
+    geo,
     new THREE.PointsMaterial({
       size,
       sizeAttenuation: true,
       transparent: true,
-      opacity: local ? 0.62 : 0.95,
+      opacity: near ? 0.78 : 0.92,
       depthWrite: false,
       vertexColors: true,
       blending: THREE.AdditiveBlending
@@ -545,372 +478,483 @@ function randomSpherePoint(minR, maxR) {
   );
 }
 
-function formatScore(value) {
-  return Math.max(0, Math.floor(value)).toString().padStart(6, "0");
+function createTargets() {
+  const baseMaterials = [
+    new THREE.MeshStandardMaterial({
+      color: 0x9dfbff,
+      emissive: 0x4ef0ff,
+      emissiveIntensity: 0.9,
+      roughness: 0.24,
+      metalness: 0.72
+    }),
+    new THREE.MeshStandardMaterial({
+      color: 0xff8bdd,
+      emissive: 0xff56cf,
+      emissiveIntensity: 0.8,
+      roughness: 0.26,
+      metalness: 0.75
+    }),
+    new THREE.MeshStandardMaterial({
+      color: 0xc2c9ff,
+      emissive: 0x6c82ff,
+      emissiveIntensity: 0.76,
+      roughness: 0.3,
+      metalness: 0.72
+    })
+  ];
+
+  const bonusMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffefb0,
+    emissive: 0xffd768,
+    emissiveIntensity: 1.2,
+    roughness: 0.18,
+    metalness: 0.82
+  });
+
+  for (let i = 0; i < 7; i++) {
+    const geometry = i % 2 === 0
+      ? new THREE.OctahedronGeometry(0.18 + Math.random() * 0.05)
+      : new THREE.IcosahedronGeometry(0.16 + Math.random() * 0.045, 0);
+    const material = baseMaterials[i % baseMaterials.length].clone();
+    const mesh = new THREE.Mesh(geometry, material);
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.28, 0.012, 8, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.2,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    halo.rotation.x = Math.PI * 0.5;
+    mesh.add(halo);
+
+    mesh.userData = {
+      angle: (Math.PI * 2 * i) / 7,
+      radius: 2.2 + Math.random() * 1.1,
+      height: (Math.random() - 0.5) * 1.8,
+      speed: 0.45 + Math.random() * 0.42,
+      wobble: 0.8 + Math.random() * 1.2,
+      wobbleOffset: Math.random() * Math.PI * 2,
+      baseScale: 1,
+      cooldown: 0,
+      isBonus: false,
+      defaultMaterial: material,
+      bonusMaterial,
+      halo,
+      value: 100 + Math.floor(Math.random() * 40)
+    };
+
+    targetGroup.add(mesh);
+    targets.push(mesh);
+    targetRaycastables.push(mesh);
+  }
 }
 
-function setOverlay(overlay, visible) {
-  overlay.classList.toggle("visible", visible);
+function activateRandomBonus() {
+  if (bonusActive) return;
+  const available = targets.filter((target) => target.userData.cooldown <= 0.05 && !target.userData.isBonus);
+  if (!available.length) return;
+  const target = available[Math.floor(Math.random() * available.length)];
+  target.userData.isBonus = true;
+  target.material = target.userData.bonusMaterial;
+  target.userData.halo.material.color.setHex(0xffd768);
+  target.userData.halo.material.opacity = 0.34;
+  bonusActive = true;
+  bonusTimer = 6.5;
+  bonusValue.textContent = "ON";
+  setToast("Alvo raro ativo. O fragmento dourado rende carga extra.");
+}
+
+function clearBonus(target = null) {
+  const bonusTarget = target || targets.find((item) => item.userData.isBonus);
+  if (bonusTarget) {
+    bonusTarget.userData.isBonus = false;
+    bonusTarget.material = bonusTarget.userData.defaultMaterial;
+    bonusTarget.userData.halo.material.color.setHex(0xffffff);
+    bonusTarget.userData.halo.material.opacity = 0.2;
+  }
+  bonusActive = false;
+  bonusTimer = 0;
+  bonusValue.textContent = "OFF";
+}
+
+function setToast(message, duration = 2.2) {
+  statusToast.textContent = message;
+  statusToast.classList.remove("hidden");
+  toastTimer = duration;
+}
+
+function setStatus(message) {
+  statusText.textContent = message;
+}
+
+function formatScore(value) {
+  return String(Math.max(0, Math.floor(value))).padStart(6, "0");
+}
+
+function updateUI() {
+  scoreValue.textContent = formatScore(score);
+  comboValue.textContent = `x${combo}`;
+  timeValue.textContent = `${Math.max(0, timeLeft).toFixed(1)}s`;
+  energyValue.textContent = `${Math.round(energy)}%`;
+  energyFill.style.width = `${THREE.MathUtils.clamp(energy, 0, 100)}%`;
+  streakValue.textContent = String(streak);
+  phaseLabel.textContent = `Fase 0${phase}`;
+  objectiveText.textContent = energy >= 100
+    ? "Núcleo estabilizado"
+    : phase === 1
+      ? "Carregue o núcleo até 34%"
+      : phase === 2
+        ? "Empurre a carga até 67%"
+        : "Finalize a ativação até 100%";
+}
+
+function resetTargets() {
+  clearBonus();
+  targets.forEach((target, index) => {
+    target.userData.angle = (Math.PI * 2 * index) / targets.length;
+    target.userData.radius = 2.1 + Math.random() * 1.2;
+    target.userData.height = (Math.random() - 0.5) * 1.7;
+    target.userData.cooldown = 0;
+    target.userData.baseScale = 1;
+    target.scale.setScalar(1);
+    target.material = target.userData.defaultMaterial;
+    target.userData.halo.material.color.setHex(0xffffff);
+    target.userData.halo.material.opacity = 0.2;
+  });
 }
 
 function resetGame() {
-  game.state = "idle";
-  game.timer = game.duration;
-  game.score = 0;
-  game.combo = 1;
-  game.streak = 0;
-  game.bestCombo = 1;
-  game.energy = 0;
-  game.pulse = 0;
-  game.phase = 1;
-  game.missFlash = 0;
-  game.overdrive = 0;
-  updateHud();
-  statusText.textContent = "Arraste para inclinar a câmera. Toque rápido nos alvos para subir o combo.";
-  objectiveText.textContent = "Alcance 100% de energia";
+  running = false;
+  timeLeft = 50;
+  score = 0;
+  combo = 1;
+  bestCombo = 1;
+  streak = 0;
+  energy = 0;
+  phase = 1;
+  pulse = 0;
+  totalHits = 0;
+  toastTimer = 0;
+  resetTargets();
+  setStatus("Arraste para inclinar a câmera. Toque rápido para subir o combo.");
+  setToast("Toque nos fragmentos brilhantes. O fragmento dourado vale mais.", 9999);
+  updateUI();
 }
 
 function startGame() {
   resetGame();
-  setOverlay(startOverlay, false);
-  setOverlay(endOverlay, false);
-  game.state = "running";
-  statusText.textContent = "Missão iniciada. Colete fragmentos luminosos.";
+  running = true;
+  gameStartedOnce = true;
+  statusToast.classList.remove("hidden");
+  startOverlay.classList.remove("visible");
+  endOverlay.classList.remove("visible");
+  setToast("Missão iniciada. Gere energia antes do tempo acabar.", 2.4);
 }
 
-function endGame(victory) {
-  if (game.state === "ended") return;
-  game.state = "ended";
-  setOverlay(endOverlay, true);
-  endEyebrow.textContent = victory ? "NÚCLEO ATIVADO" : "TEMPO ESGOTADO";
-  endTitle.textContent = victory ? "Missão concluída" : "Carga insuficiente";
-  endMessage.textContent = victory
-    ? "Você atingiu a carga máxima e abriu o portal. Ótimo material para demo no iPhone."
-    : "Você não chegou a 100% a tempo, mas o cenário continua ótimo para testar toque, HUD e gameplay.";
-  endScore.textContent = formatScore(game.score);
-  endCombo.textContent = `x${game.bestCombo}`;
-  endEnergy.textContent = `${Math.round(game.energy)}%`;
+function endGame(won) {
+  running = false;
+  endOverlay.classList.add("visible");
+  endEyebrow.textContent = won ? "NÚCLEO ESTABILIZADO" : "MISSÃO ENCERRADA";
+  endTitle.textContent = won ? "Vitória" : "Tempo esgotado";
+  endMessage.textContent = won
+    ? "Você completou a carga máxima e estabilizou o Chrono Core."
+    : "Faltou energia para concluir a ativação. Tente acelerar o combo e aproveitar o alvo raro.";
+  endScore.textContent = formatScore(score);
+  endCombo.textContent = `x${bestCombo}`;
+  endEnergy.textContent = `${Math.round(energy)}%`;
 }
 
-function updateHud() {
-  scoreValue.textContent = formatScore(game.score);
-  comboValue.textContent = `x${game.combo}`;
-  timeValue.textContent = `${Math.max(0, game.timer).toFixed(1)}s`;
-  energyValue.textContent = `${Math.round(game.energy)}%`;
-  energyFill.style.width = `${THREE.MathUtils.clamp(game.energy, 0, 100)}%`;
-  phaseValue.textContent = String(game.phase).padStart(2, "0");
-  streakValue.textContent = `${game.streak}`;
-}
-
-function refreshPhase() {
-  const nextPhase = game.energy >= 66 ? 3 : game.energy >= 33 ? 2 : 1;
-  if (nextPhase !== game.phase) {
-    game.phase = nextPhase;
-    game.pulse = 1;
-    statusText.textContent = `Fase ${String(game.phase).padStart(2, "0")} liberada. O portal respondeu ao seu progresso.`;
+function setPhaseFromEnergy() {
+  const newPhase = energy >= 67 ? 3 : energy >= 34 ? 2 : 1;
+  if (newPhase !== phase) {
+    phase = newPhase;
+    setToast(phase === 2 ? "Fase 02: a órbita acelerou." : "Fase 03: núcleo em sobrecarga visual.");
   }
-}
-
-function setPointerFromEvent(clientX, clientY) {
-  pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
-  pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
-}
-
-function attemptHit(clientX, clientY) {
-  if (game.state !== "running") return;
-  setPointerFromEvent(clientX, clientY);
-  raycaster.setFromCamera(pointerNdc, camera);
-
-  const intersections = raycaster.intersectObjects(targets, true);
-  const firstTargetHit = intersections.find((hit) => {
-    let obj = hit.object;
-    while (obj && obj !== scene) {
-      if (obj.userData?.isTarget) return true;
-      obj = obj.parent;
-    }
-    return false;
-  });
-
-  if (!firstTargetHit) {
-    registerMiss();
-    return;
-  }
-
-  let target = firstTargetHit.object;
-  while (target && !target.userData?.isTarget) {
-    target = target.parent;
-  }
-  if (target) collectTarget(target, firstTargetHit.point);
 }
 
 function registerMiss() {
-  game.combo = 1;
-  game.streak = 0;
-  game.missFlash = 1;
-  statusText.textContent = "Toque limpo: mire nos fragmentos brilhantes para manter o combo.";
-  updateHud();
+  if (!running) return;
+  combo = 1;
+  streak = 0;
+  setStatus("Toque vazio. O combo foi reiniciado.");
+  setToast("Toque vazio. Mire nos fragmentos orbitais.", 1.2);
+  updateUI();
 }
 
-function collectTarget(target, hitPoint) {
-  const gain = target.userData.value;
-  const scoreGain = gain * 100 * game.combo;
-  game.score += scoreGain;
-  game.streak += 1;
-  game.combo = Math.min(game.combo + 1, 12);
-  game.bestCombo = Math.max(game.bestCombo, game.combo);
-  game.energy = Math.min(100, game.energy + gain * 0.9 + game.combo * 0.35);
-  game.pulse = 1;
-  game.overdrive = Math.min(1, game.overdrive + 0.08);
-  statusText.textContent = `+${scoreGain} pontos. Sequência em alta.`;
-  refreshPhase();
-  updateHud();
+function collectTarget(target) {
+  if (!running || target.userData.cooldown > 0.01) return;
 
-  target.userData.collectAnim = 1;
-  target.userData.t = Math.random() * Math.PI * 2;
-  target.userData.radius = 2.35 + Math.random() * 1.55;
-  target.userData.yAmp = 0.6 + Math.random() * 0.7;
-  target.userData.speed = 0.35 + Math.random() * 0.5;
-  target.userData.value = 8 + Math.floor(Math.random() * 5);
+  totalHits += 1;
+  combo += 1;
+  streak += 1;
+  bestCombo = Math.max(bestCombo, combo);
 
-  spawnBurst(hitPoint || target.getWorldPosition(tempVec3), target.userData.body.material.color.getHex());
+  const isBonus = target.userData.isBonus;
+  const baseValue = isBonus ? 280 : target.userData.value;
+  const comboFactor = 1 + Math.min(combo - 1, 10) * 0.14;
+  const gain = Math.round(baseValue * comboFactor);
+  const energyGain = isBonus ? 13 : 4.2 + Math.min(combo, 9) * 0.85;
 
-  if (game.energy >= 100) {
-    updateHud();
+  score += gain;
+  energy = Math.min(100, energy + energyGain);
+  pulse = 1;
+  target.userData.cooldown = 0.4;
+  target.userData.angle += Math.PI * (0.7 + Math.random() * 0.5);
+  target.userData.height = (Math.random() - 0.5) * 1.7;
+  target.userData.radius = 2.0 + Math.random() * 1.3;
+
+  if (isBonus) {
+    setStatus(`Fragmento raro capturado. +${Math.round(energyGain)}% de carga.`);
+    setToast(`Alvo raro capturado. +${gain} pontos.`, 1.6);
+    clearBonus(target);
+  } else if (combo >= 6 && combo % 3 === 0) {
+    setStatus(`Combo x${combo}. Continue para manter a sobrecarga.`);
+    setToast(`Combo x${combo}.`, 1.1);
+  } else {
+    setStatus("Boa. Continue tocando para crescer o combo.");
+  }
+
+  if (!bonusActive && totalHits > 0 && totalHits % 6 === 0) {
+    activateRandomBonus();
+  }
+
+  setPhaseFromEnergy();
+  updateUI();
+
+  if (energy >= 100) {
     endGame(true);
   }
 }
 
-function spawnBurst(position, color) {
-  for (let i = 0; i < burstParticles.length; i++) {
-    const item = burstParticles[i];
-    if (item.life <= 0) {
-      item.mesh.visible = true;
-      item.mesh.material.color.setHex(color);
-      item.mesh.material.opacity = 0.85;
-      item.mesh.position.copy(position);
-      item.mesh.scale.setScalar(1);
-      item.velocity.copy(randomSpherePoint(0.03, 0.18));
-      item.life = 1;
-      item.maxLife = 0.35 + Math.random() * 0.35;
-    }
-  }
-}
+function updateTargets(time, dt) {
+  let rareTargetVisible = false;
 
-function updateBursts(dt) {
-  for (const item of burstParticles) {
-    if (item.life <= 0) continue;
-    item.life -= dt;
-    const alpha = Math.max(0, item.life / item.maxLife);
-    item.mesh.material.opacity = alpha * 0.85;
-    item.mesh.position.addScaledVector(item.velocity, dt * 6.5);
-    item.mesh.scale.setScalar(1 + (1 - alpha) * 1.7);
-    if (item.life <= 0) {
-      item.mesh.visible = false;
-    }
-  }
-}
-
-function updateTargets(t, dt) {
-  const energyFactor = game.energy / 100;
-  for (let i = 0; i < targets.length; i++) {
-    const target = targets[i];
+  targets.forEach((target, index) => {
     const data = target.userData;
-    const time = t * data.speed + data.seed;
-    const phaseScale = 1 + (game.phase - 1) * 0.12;
-    const radius = data.radius * phaseScale;
+    data.cooldown = Math.max(0, data.cooldown - dt);
+
+    const speedBoost = 1 + phase * 0.18 + energy * 0.005;
+    data.angle += data.speed * dt * speedBoost * (index % 2 === 0 ? 1 : -1);
+    const radius = data.radius + Math.sin(time * data.wobble + data.wobbleOffset) * 0.18;
+    const y = data.height + Math.cos(time * (0.8 + data.wobble * 0.3) + data.wobbleOffset) * 0.3;
+    const z = Math.sin(time * 0.7 + data.wobbleOffset) * 0.65;
 
     target.position.set(
-      Math.cos(time + i * 0.6) * radius,
-      Math.sin(time * 1.35 + i) * data.yAmp,
-      Math.sin(time * 0.85 + i * 1.2) * (1.4 + energyFactor * 0.5)
+      Math.cos(data.angle) * radius,
+      y,
+      Math.sin(data.angle) * radius * 0.58 + z
     );
 
-    data.body.rotation.x += dt * (1.4 + i * 0.05);
-    data.body.rotation.y += dt * (1.8 + i * 0.07);
-    data.halo.rotation.z += dt * (1.5 + i * 0.06);
+    const scaleTarget = data.cooldown > 0.01 ? 0.74 : data.isBonus ? 1.22 : 1.0;
+    data.baseScale = THREE.MathUtils.lerp(data.baseScale, scaleTarget, 0.12);
+    target.scale.setScalar(data.baseScale + Math.sin(time * 5.5 + data.wobbleOffset) * 0.035);
+    target.rotation.x += dt * (1.4 + index * 0.12);
+    target.rotation.y += dt * (1.2 + index * 0.08);
 
-    const breathing = 1 + Math.sin(t * 3.2 + data.seed) * 0.1;
-    const collectScale = 1 + data.collectAnim * 0.75;
-    const baseScale = data.baseScale * breathing * collectScale;
-    target.scale.setScalar(baseScale);
-    data.shell.material.opacity = 0.08 + breathing * 0.06 + energyFactor * 0.08;
-    data.halo.material.opacity = 0.18 + breathing * 0.12;
-    data.body.material.emissiveIntensity = 0.85 + breathing * 0.3 + energyFactor * 0.45;
+    target.material.emissiveIntensity = data.isBonus
+      ? 1.45 + Math.sin(time * 10.0) * 0.15
+      : 0.72 + Math.sin(time * 6.0 + index) * 0.12 + energy * 0.004;
 
-    data.collectAnim = Math.max(0, data.collectAnim - dt * 4.5);
+    target.userData.halo.rotation.z += dt * (0.8 + index * 0.1);
+    target.userData.halo.material.opacity = data.isBonus
+      ? 0.28 + Math.sin(time * 8.0) * 0.06
+      : 0.16 + Math.sin(time * 4.0 + index) * 0.03;
+
+    if (data.isBonus) rareTargetVisible = true;
+  });
+
+  if (bonusActive) {
+    bonusTimer -= dt;
+    if (bonusTimer <= 0 || !rareTargetVisible) {
+      clearBonus();
+      setToast("Alvo raro expirou.", 1.2);
+    }
   }
 }
 
-function updateOrbiters(t) {
-  orbs[0].position.set(Math.cos(t * 1.2) * 2.55, Math.sin(t * 1.0) * 0.78, Math.sin(t * 1.25) * 1.2);
-  orbs[1].position.set(Math.cos(t * 0.92 + 2.2) * 3.0, Math.sin(t * 1.12 + 1.5) * 1.0, Math.sin(t * 1.45 + 0.6) * 1.38);
-  orbs[2].position.set(Math.cos(t * 1.34 + 4.0) * 2.12, Math.sin(t * 0.86 + 2.8) * 1.16, Math.sin(t * 1.62 + 1.8) * 1.52);
+function updateWorld(time, dt) {
+  pulse = THREE.MathUtils.lerp(pulse, 0, dt * 6.5);
 
-  orbs[0].rotation.x += 0.04;
-  orbs[0].rotation.y += 0.03;
-  orbs[1].rotation.x += 0.03;
-  orbs[1].rotation.z += 0.04;
-  orbs[2].rotation.y += 0.05;
-  orbs[2].rotation.z += 0.03;
-}
+  cameraRotX = THREE.MathUtils.lerp(cameraRotX, targetCameraRotX, 0.06);
+  cameraRotY = THREE.MathUtils.lerp(cameraRotY, targetCameraRotY, 0.06);
 
-function updateCamera(dt) {
-  interaction.rotX = THREE.MathUtils.lerp(interaction.rotX, interaction.targetRotX, 0.06);
-  interaction.rotY = THREE.MathUtils.lerp(interaction.rotY, interaction.targetRotY, 0.06);
-  interaction.autoRotY += dt * 0.1;
+  pivot.rotation.x = cameraRotX + Math.sin(time * 0.38) * 0.06;
+  pivot.rotation.y = cameraRotY + time * (0.22 + energy * 0.0018);
+  pivot.rotation.z = Math.sin(time * 0.2) * 0.035;
 
-  const autoY = Math.sin(interaction.autoRotY) * 0.08;
-  pivot.rotation.x = interaction.rotX + Math.sin(clock.elapsedTime * 0.42) * 0.06;
-  pivot.rotation.y = interaction.rotY + autoY + clock.elapsedTime * 0.24;
-  pivot.rotation.z = Math.sin(clock.elapsedTime * 0.2) * 0.04;
+  ringA.rotation.z += dt * (0.55 + energy * 0.005);
+  ringB.rotation.y += dt * (0.7 + energy * 0.006);
+  ringC.rotation.x -= dt * (0.62 + energy * 0.005);
+  trailGroup.rotation.z -= dt * (0.32 + phase * 0.07);
+  trailGroup.rotation.y += dt * 0.18;
 
-  const camTargetX = interaction.targetRotY * 0.68;
-  const camTargetY = -interaction.targetRotX * 0.5 + 0.4;
-  const camTargetZ = 8.45 - game.pulse * 0.16 - game.overdrive * 0.22;
+  halo.scale.setScalar(1 + pulse * 0.18 + energy * 0.0018);
+  reticle.rotation.z += dt * (0.24 + phase * 0.04);
+  reticle.scale.setScalar(1 + pulse * 0.1 + energy * 0.001);
 
-  camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.035);
-  camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTargetY, 0.035);
-  camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.05);
+  core.rotation.y += dt * (0.48 + energy * 0.004);
+  core.rotation.x += dt * 0.16;
+  wire.rotation.y -= dt * 0.56;
+  innerCore.scale.setScalar(1 + pulse * 0.12 + energy * 0.0018);
+  beam.scale.y = 1 + pulse * 0.16 + energy * 0.001;
+  beam.material.opacity = 0.05 + energy * 0.001 + pulse * 0.05;
+
+  mist.rotation.z += dt * 0.05;
+  mist.rotation.y -= dt * 0.07;
+
+  bgUniforms.uTime.value = time;
+  bgUniforms.uEnergy.value = energy / 100;
+  portalUniforms.uTime.value = time;
+  portalUniforms.uEnergy.value = energy / 100;
+  portalUniforms.uPulse.value = pulse;
+  coreUniforms.uTime.value = time;
+  coreUniforms.uEnergy.value = energy / 100;
+  coreUniforms.uPulse.value = pulse;
+
+  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCameraRotY * 0.85, 0.04);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, -targetCameraRotX * 0.72 + 0.2, 0.04);
+  camera.position.z = THREE.MathUtils.lerp(camera.position.z, 8.3 - pulse * 0.25 - phase * 0.08, 0.04);
   camera.lookAt(0, 0, 0);
 }
-
-function onPointerDown(x, y) {
-  interaction.isDown = true;
-  interaction.dragging = false;
-  interaction.downX = x;
-  interaction.downY = y;
-}
-
-function onPointerMove(x, y) {
-  if (!interaction.isDown) return;
-  const dx = x - interaction.downX;
-  const dy = y - interaction.downY;
-  if (Math.abs(dx) > 7 || Math.abs(dy) > 7) interaction.dragging = true;
-  interaction.targetRotY = THREE.MathUtils.clamp(interaction.targetRotY + dx * 0.0028, -0.95, 0.95);
-  interaction.targetRotX = THREE.MathUtils.clamp(interaction.targetRotX + dy * 0.0018, -0.55, 0.55);
-  interaction.downX = x;
-  interaction.downY = y;
-}
-
-function onPointerUp(x, y) {
-  if (!interaction.dragging) attemptHit(x, y);
-  interaction.isDown = false;
-}
-
-window.addEventListener("pointerdown", (e) => {
-  if (e.target.closest("button")) return;
-  onPointerDown(e.clientX, e.clientY);
-}, { passive: true });
-
-window.addEventListener("pointermove", (e) => {
-  onPointerMove(e.clientX, e.clientY);
-}, { passive: true });
-
-window.addEventListener("pointerup", (e) => {
-  onPointerUp(e.clientX, e.clientY);
-}, { passive: true });
-
-window.addEventListener("pointercancel", () => {
-  interaction.isDown = false;
-});
-
-startBtn.addEventListener("click", async () => {
-  await requestFullscreenMaybe();
-  startGame();
-});
-
-restartBtn.addEventListener("click", async () => {
-  await requestFullscreenMaybe();
-  startGame();
-});
-
-fullscreenBtn.addEventListener("click", requestFullscreenMaybe);
-
-document.addEventListener("fullscreenchange", () => {
-  fullscreenBtn.textContent = document.fullscreenElement ? "Sair" : "Tela cheia";
-});
-
-async function requestFullscreenMaybe() {
-  if (document.fullscreenElement) return;
-  if (!app.requestFullscreen) {
-    statusText.textContent = "No iPhone, use Adicionar à Tela de Início para a experiência mais limpa.";
-    return;
-  }
-  try {
-    await app.requestFullscreen();
-  } catch {
-    statusText.textContent = "Tela cheia depende do navegador. No iPhone, a Tela de Início costuma funcionar melhor.";
-  }
-}
-
-function resize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-}
-window.addEventListener("resize", resize);
 
 function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 0.033);
-  const t = clock.elapsedTime;
+  const time = clock.elapsedTime;
 
-  if (game.state === "running") {
-    game.timer -= dt;
-    if (game.timer <= 0) {
-      game.timer = 0;
-      updateHud();
+  if (running) {
+    timeLeft = Math.max(0, timeLeft - dt);
+    if (timeLeft <= 0 && energy < 100) {
       endGame(false);
     }
   }
 
-  game.pulse = THREE.MathUtils.lerp(game.pulse, 0, dt * 8.5);
-  game.missFlash = THREE.MathUtils.lerp(game.missFlash, 0, dt * 8.0);
-  game.overdrive = THREE.MathUtils.lerp(game.overdrive, 0, dt * 1.2);
+  if (toastTimer > 0 && toastTimer < 900) {
+    toastTimer -= dt;
+    if (toastTimer <= 0) {
+      statusToast.classList.add("hidden");
+    }
+  }
 
-  updateCamera(dt);
-  updateTargets(t, dt);
-  updateOrbiters(t);
-  updateBursts(dt);
+  updateTargets(time, dt);
+  updateWorld(time, dt);
+  updateUI();
 
-  ringA.rotation.z += 0.004 + game.phase * 0.0008;
-  ringB.rotation.y += 0.005 + game.phase * 0.0012;
-  ringC.rotation.x -= 0.0045 + game.phase * 0.001;
-
-  const pulseScale = 1 + game.pulse * 0.11;
-  ringA.scale.setScalar(pulseScale);
-  ringB.scale.setScalar(1 + game.pulse * 0.06 + game.overdrive * 0.04);
-  ringC.scale.setScalar(1 + game.pulse * 0.08 + game.overdrive * 0.06);
-
-  core.rotation.y -= 0.0038 + game.phase * 0.0007;
-  core.rotation.x += 0.0019;
-  wire.rotation.y += 0.0048 + game.phase * 0.001;
-  innerCore.scale.setScalar(1 + game.pulse * 0.2 + game.overdrive * 0.08);
-
-  beam.scale.set(1 + game.energy / 160, 1 + game.energy / 100, 1 + game.energy / 160);
-  beamMaterial.opacity = 0.08 + game.energy / 1000 + game.pulse * 0.08;
-
-  stars.rotation.y += 0.0005;
-  stars.rotation.x = Math.sin(t * 0.13) * 0.04;
-  mist.rotation.z -= 0.0045;
-  mist.rotation.y += 0.0028;
-
-  bgUniforms.uTime.value = t;
-  bgUniforms.uEnergy.value = game.energy / 100;
-  portalUniforms.uTime.value = t;
-  portalUniforms.uEnergy.value = game.energy / 100;
-  portalUniforms.uPulse.value = game.pulse;
-  coreUniforms.uTime.value = t;
-  coreUniforms.uEnergy.value = game.energy / 100;
-  coreUniforms.uPulse.value = game.pulse;
-
-  renderer.toneMappingExposure = 1.08 + game.energy / 220 + game.pulse * 0.12 - game.missFlash * 0.04;
-
-  updateHud();
   renderer.render(scene, camera);
 }
 
+function getEventPoint(event) {
+  if (event.changedTouches && event.changedTouches[0]) {
+    return event.changedTouches[0];
+  }
+  if (event.touches && event.touches[0]) {
+    return event.touches[0];
+  }
+  return event;
+}
+
+function setPointerRotation(x, y) {
+  const nx = (x / window.innerWidth) * 2 - 1;
+  const ny = (y / window.innerHeight) * 2 - 1;
+  targetCameraRotY = nx * 0.48;
+  targetCameraRotX = ny * 0.22;
+}
+
+function tryHitTarget(clientX, clientY) {
+  pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
+  pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+  const hits = raycaster.intersectObjects(targetRaycastables, false);
+  if (hits.length > 0) {
+    collectTarget(hits[0].object);
+  } else {
+    registerMiss();
+  }
+}
+
+function onPointerDown(event) {
+  const point = getEventPoint(event);
+  downX = point.clientX;
+  downY = point.clientY;
+  dragActive = true;
+  moved = false;
+}
+
+function onPointerMove(event) {
+  if (!dragActive) return;
+  const point = getEventPoint(event);
+  const dx = point.clientX - downX;
+  const dy = point.clientY - downY;
+  if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+  setPointerRotation(point.clientX, point.clientY);
+}
+
+function onPointerUp(event) {
+  if (!dragActive) return;
+  dragActive = false;
+  const point = getEventPoint(event);
+  setPointerRotation(point.clientX, point.clientY);
+  if (!moved && running) {
+    tryHitTarget(point.clientX, point.clientY);
+  }
+}
+
+async function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) {
+      await document.exitFullscreen();
+    }
+    return;
+  }
+  if (app.requestFullscreen) {
+    try {
+      await app.requestFullscreen();
+    } catch (error) {
+      setToast("No iPhone, abrir pela Tela de Início costuma ficar melhor.", 2.6);
+    }
+  } else {
+    setToast("Este navegador pode limitar tela cheia. Use a Tela de Início no iPhone.", 2.6);
+  }
+}
+
+function onFullscreenChange() {
+  fullscreenBtn.textContent = document.fullscreenElement ? "Sair" : "Tela cheia";
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+}
+
+window.addEventListener("resize", onResize);
+if (window.PointerEvent) {
+  window.addEventListener("pointerdown", onPointerDown, { passive: true });
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerup", onPointerUp, { passive: true });
+} else {
+  window.addEventListener("touchstart", onPointerDown, { passive: true });
+  window.addEventListener("touchmove", onPointerMove, { passive: true });
+  window.addEventListener("touchend", onPointerUp, { passive: true });
+}
+
+document.addEventListener("fullscreenchange", onFullscreenChange);
+fullscreenBtn.addEventListener("click", toggleFullscreen);
+startBtn.addEventListener("click", startGame);
+restartBtn.addEventListener("click", startGame);
+
 resetGame();
 animate();
+
+if (window.navigator.standalone === true) {
+  fullscreenBtn.style.display = "none";
+}
+
+if (!gameStartedOnce) {
+  setPointerRotation(window.innerWidth * 0.5, window.innerHeight * 0.5);
+}

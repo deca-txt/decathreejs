@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cosmic Portal" />
+  <title>Cosmic Portal</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --ui-bg: rgba(8, 12, 28, 0.42);
+      --ui-border: rgba(255, 255, 255, 0.12);
+      --ui-text: rgba(255, 255, 255, 0.92);
+      --ui-muted: rgba(255, 255, 255, 0.72);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 20%, #13204a 0%, #050711 35%, #020307 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      touch-action: none;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding:
+        calc(14px + env(safe-area-inset-top))
+        14px
+        14px
+        14px;
+      pointer-events: none;
+    }
+
+    .badge {
+      max-width: min(72vw, 360px);
+      padding: 12px 14px;
+      border: 1px solid var(--ui-border);
+      border-radius: 18px;
+      background: var(--ui-bg);
+      backdrop-filter: blur(18px) saturate(140%);
+      color: var(--ui-text);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .badge strong {
+      display: block;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .badge span {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--ui-muted);
+    }
+
+    .action {
+      pointer-events: auto;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      color: white;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+    }
+
+    .action:active {
+      transform: scale(0.98);
+    }
+
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(92vw, 680px);
+      text-align: center;
+      padding:
+        10px 14px
+        calc(12px + env(safe-area-inset-bottom))
+        14px;
+      color: rgba(255,255,255,0.76);
+      font-size: 12px;
+      line-height: 1.4;
+      pointer-events: none;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="topbar">
+    <div class="badge">
+      <strong>Cosmic Portal</strong>
+      <span>Arraste para inclinar a cena. Toque para disparar um pulso.</span>
+    </div>
+    <button id="fsBtn" class="action" type="button">Tela cheia</button>
+  </div>
+
+  <div id="hint" class="hint">
+    No iPhone, o modo mais “app” costuma ficar melhor pela Tela de Início.
+  </div>
+
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+    const app = document.getElementById("app");
+    const fsBtn = document.getElementById("fsBtn");
+    const hint = document.getElementById("hint");
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050816, 0.045);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 8);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    app.appendChild(renderer.domElement);
+
+    const clock = new THREE.Clock();
+
+    const world = new THREE.Group();
+    const pivot = new THREE.Group();
+    world.add(pivot);
+    scene.add(world);
+
+    const ambient = new THREE.AmbientLight(0x6d7cff, 0.8);
+    scene.add(ambient);
+
+    const lightA = new THREE.DirectionalLight(0x72f6ff, 3.2);
+    lightA.position.set(5, 4, 5);
+    scene.add(lightA);
+
+    const lightB = new THREE.DirectionalLight(0xff4dd4, 2.4);
+    lightB.position.set(-5, -2, 4);
+    scene.add(lightB);
+
+    // Fundo esférico com shader
+    const bgUniforms = {
+      uTime: { value: 0 }
+    };
+
+    const bgMaterial = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: bgUniforms,
+      vertexShader: `
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vDir;
+        uniform float uTime;
+
+        float hash(vec3 p) {
+          p = fract(p * 0.3183099 + vec3(.1, .2, .3));
+          p *= 17.0;
+          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+        }
+
+        float noise(vec3 x) {
+          vec3 i = floor(x);
+          vec3 f = fract(x);
+          f = f * f * (3.0 - 2.0 * f);
+
+          float n000 = hash(i + vec3(0.0, 0.0, 0.0));
+          float n100 = hash(i + vec3(1.0, 0.0, 0.0));
+          float n010 = hash(i + vec3(0.0, 1.0, 0.0));
+          float n110 = hash(i + vec3(1.0, 1.0, 0.0));
+          float n001 = hash(i + vec3(0.0, 0.0, 1.0));
+          float n101 = hash(i + vec3(1.0, 0.0, 1.0));
+          float n011 = hash(i + vec3(0.0, 1.0, 1.0));
+          float n111 = hash(i + vec3(1.0, 1.0, 1.0));
+
+          float nx00 = mix(n000, n100, f.x);
+          float nx10 = mix(n010, n110, f.x);
+          float nx01 = mix(n001, n101, f.x);
+          float nx11 = mix(n011, n111, f.x);
+
+          float nxy0 = mix(nx00, nx10, f.y);
+          float nxy1 = mix(nx01, nx11, f.y);
+
+          return mix(nxy0, nxy1, f.z);
+        }
+
+        void main() {
+          vec3 d = normalize(vDir);
+          float t = uTime * 0.05;
+
+          float n1 = noise(d * 4.5 + vec3(t, -t * 1.5, t * 0.7));
+          float n2 = noise(d * 9.0 + vec3(-t * 1.2, t * 0.8, -t));
+          float n = smoothstep(0.25, 0.95, n1 * 0.75 + n2 * 0.45);
+
+          float horizon = pow(1.0 - abs(d.y), 2.0);
+          float aurora = 0.5 + 0.5 * sin((atan(d.z, d.x) * 5.0) + uTime * 0.25 + d.y * 3.0);
+          float glow = smoothstep(0.15, 1.0, horizon) * aurora;
+
+          vec3 colA = vec3(0.01, 0.03, 0.08);
+          vec3 colB = vec3(0.08, 0.10, 0.26);
+          vec3 colC = vec3(0.05, 0.42, 0.68);
+          vec3 colD = vec3(0.47, 0.05, 0.52);
+
+          vec3 color = mix(colA, colB, horizon);
+          color += mix(colC, colD, aurora) * glow * 0.35;
+          color += vec3(0.12, 0.55, 1.0) * n * 0.22;
+          color += vec3(0.95, 0.35, 1.0) * n * horizon * 0.08;
+
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `
+    });
+
+    const bgSphere = new THREE.Mesh(new THREE.SphereGeometry(42, 64, 64), bgMaterial);
+    scene.add(bgSphere);
+
+    // Portal
+    const portalUniforms = {
+      uTime: { value: 0 },
+      uPulse: { value: 0 }
+    };
+
+    const portalMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: portalUniforms,
+      vertexShader: `
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+        void main() {
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPos = worldPos.xyz;
+          vNormalW = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+        uniform float uTime;
+        uniform float uPulse;
+        uniform vec3 cameraPosition;
+
+        void main() {
+          vec3 N = normalize(vNormalW);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+
+          float fresnel = pow(1.0 - abs(dot(N, V)), 3.0);
+          float angle = atan(vWorldPos.y, vWorldPos.x);
+          float scan = 0.5 + 0.5 * sin(angle * 10.0 + uTime * 3.2);
+          float electric = 0.5 + 0.5 * sin(vWorldPos.z * 8.0 - uTime * 4.0 + angle * 6.0);
+
+          vec3 col1 = vec3(0.05, 0.55, 1.0);
+          vec3 col2 = vec3(1.0, 0.18, 0.78);
+          vec3 col3 = vec3(0.45, 1.0, 0.98);
+
+          vec3 color = mix(col1, col2, scan);
+          color = mix(color, col3, electric * 0.4);
+          color *= 0.55 + fresnel * 1.9 + uPulse * 1.15;
+
+          float alpha = 0.12 + fresnel * 0.72 + scan * 0.08 + uPulse * 0.14;
+
+          gl_FragColor = vec4(color, alpha);
+        }
+      `
+    });
+
+    const ringA = new THREE.Mesh(new THREE.TorusGeometry(2.65, 0.13, 40, 240), portalMaterial);
+    ringA.rotation.x = 1.15;
+    ringA.rotation.y = 0.18;
+    pivot.add(ringA);
+
+    const ringB = new THREE.Mesh(
+      new THREE.TorusGeometry(3.1, 0.035, 20, 220),
+      new THREE.MeshBasicMaterial({
+        color: 0x8ef8ff,
+        transparent: true,
+        opacity: 0.28,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    ringB.rotation.x = -1.06;
+    ringB.rotation.z = 0.35;
+    pivot.add(ringB);
+
+    const ringC = new THREE.Mesh(
+      new THREE.TorusGeometry(2.15, 0.02, 20, 180),
+      new THREE.MeshBasicMaterial({
+        color: 0xff5ccf,
+        transparent: true,
+        opacity: 0.22,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    ringC.rotation.y = 1.1;
+    ringC.rotation.x = 0.45;
+    pivot.add(ringC);
+
+    // Cristal central
+    const crystalUniforms = {
+      uTime: { value: 0 },
+      uPulse: { value: 0 }
+    };
+
+    const crystalMaterial = new THREE.ShaderMaterial({
+      uniforms: crystalUniforms,
+      vertexShader: `
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+        varying float vWave;
+        uniform float uTime;
+        uniform float uPulse;
+
+        void main() {
+          float wobble =
+            sin(position.y * 7.0 + uTime * 1.7) * 0.03 +
+            sin(position.x * 9.0 - uTime * 1.2) * 0.025 +
+            sin(position.z * 8.0 + uTime * 1.5) * 0.02;
+
+          vec3 displaced = position + normal * wobble * (1.0 + uPulse * 0.55);
+
+          vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
+          vWorldPos = worldPos.xyz;
+          vNormalW = normalize(mat3(modelMatrix) * normal);
+          vWave = wobble;
+
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+        varying float vWave;
+        uniform float uTime;
+        uniform float uPulse;
+        uniform vec3 cameraPosition;
+
+        void main() {
+          vec3 N = normalize(vNormalW);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+
+          float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.7);
+          float iri = 0.5 + 0.5 * sin(N.y * 7.0 + N.x * 4.0 + uTime * 1.4 + vWave * 18.0);
+          float stripe = 0.5 + 0.5 * sin((N.z + N.x) * 12.0 - uTime * 1.8);
+
+          vec3 deepBlue = vec3(0.07, 0.28, 0.96);
+          vec3 magenta = vec3(0.98, 0.20, 0.78);
+          vec3 cyan = vec3(0.20, 0.98, 1.00);
+
+          vec3 color = mix(deepBlue, magenta, iri);
+          color = mix(color, cyan, stripe * 0.4);
+          color *= 0.62 + fresnel * 1.25 + uPulse * 0.16;
+          color += vec3(1.0) * fresnel * 0.35;
+
+          gl_FragColor = vec4(color, 0.96);
+        }
+      `,
+      transparent: true
+    });
+
+    const crystalGeo = new THREE.IcosahedronGeometry(1.28, 4);
+    const crystal = new THREE.Mesh(crystalGeo, crystalMaterial);
+    pivot.add(crystal);
+
+    const wire = new THREE.LineSegments(
+      new THREE.WireframeGeometry(crystalGeo),
+      new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.16
+      })
+    );
+    wire.scale.setScalar(1.055);
+    pivot.add(wire);
+
+    const coreUniforms = {
+      uTime: { value: 0 },
+      uPulse: { value: 0 }
+    };
+
+    const coreMaterial = new THREE.ShaderMaterial({
+      uniforms: coreUniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexShader: `
+        varying vec3 vPos;
+        void main() {
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vPos;
+        uniform float uTime;
+        uniform float uPulse;
+
+        void main() {
+          float r = length(vPos);
+          float glow = smoothstep(0.75, 0.0, r);
+          float pulse = 0.5 + 0.5 * sin(uTime * 4.0 + r * 12.0);
+          vec3 color = mix(vec3(0.2, 0.7, 1.0), vec3(1.0, 0.15, 0.7), pulse);
+          color *= glow * (1.0 + uPulse * 0.9);
+          gl_FragColor = vec4(color, glow * 0.85);
+        }
+      `
+    });
+
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.72, 42, 42), coreMaterial);
+    pivot.add(core);
+
+    // Satélites
+    const satellites = new THREE.Group();
+    pivot.add(satellites);
+
+    const satMaterials = [
+      new THREE.MeshStandardMaterial({
+        color: 0x8df6ff,
+        emissive: 0x4edfff,
+        emissiveIntensity: 0.8,
+        roughness: 0.35,
+        metalness: 0.7
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xff82d8,
+        emissive: 0xff4bd0,
+        emissiveIntensity: 0.75,
+        roughness: 0.3,
+        metalness: 0.75
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xb2b9ff,
+        emissive: 0x6277ff,
+        emissiveIntensity: 0.7,
+        roughness: 0.4,
+        metalness: 0.65
+      })
+    ];
+
+    const satelliteMeshes = [];
+    for (let i = 0; i < 3; i++) {
+      const g = new THREE.OctahedronGeometry(0.18 + i * 0.03, 0);
+      const m = satMaterials[i];
+      const mesh = new THREE.Mesh(g, m);
+      satellites.add(mesh);
+      satelliteMeshes.push(mesh);
+    }
+
+    // Campo de partículas
+    function randomSpherePoint(minR, maxR) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const r = minR + Math.random() * (maxR - minR);
+
+      return new THREE.Vector3(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+      );
+    }
+
+    const starCount = 2400;
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      const p = randomSpherePoint(7, 22);
+      const i3 = i * 3;
+      starPositions[i3] = p.x;
+      starPositions[i3 + 1] = p.y;
+      starPositions[i3 + 2] = p.z;
+
+      const palette = [
+        [0.52, 0.88, 1.00],
+        [1.00, 0.44, 0.86],
+        [0.70, 0.74, 1.00],
+        [1.00, 1.00, 1.00]
+      ][Math.floor(Math.random() * 4)];
+
+      starColors[i3] = palette[0];
+      starColors[i3 + 1] = palette[1];
+      starColors[i3 + 2] = palette[2];
+    }
+
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+    starGeo.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
+
+    const stars = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({
+        size: 0.055,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    scene.add(stars);
+
+    const swirlCount = 900;
+    const swirlPositions = new Float32Array(swirlCount * 3);
+    const swirlColors = new Float32Array(swirlCount * 3);
+
+    for (let i = 0; i < swirlCount; i++) {
+      const i3 = i * 3;
+      const a = Math.random() * Math.PI * 2;
+      const radius = 2.2 + Math.random() * 1.35;
+      const height = (Math.random() - 0.5) * 0.8;
+
+      swirlPositions[i3] = Math.cos(a) * radius;
+      swirlPositions[i3 + 1] = Math.sin(a) * radius;
+      swirlPositions[i3 + 2] = height;
+
+      const mixV = Math.random();
+      swirlColors[i3] = 0.2 + mixV * 0.8;
+      swirlColors[i3 + 1] = 0.7 + (1.0 - mixV) * 0.3;
+      swirlColors[i3 + 2] = 1.0;
+    }
+
+    const swirlGeo = new THREE.BufferGeometry();
+    swirlGeo.setAttribute("position", new THREE.BufferAttribute(swirlPositions, 3));
+    swirlGeo.setAttribute("color", new THREE.BufferAttribute(swirlColors, 3));
+
+    const swirl = new THREE.Points(
+      swirlGeo,
+      new THREE.PointsMaterial({
+        size: 0.045,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.78,
+        depthWrite: false,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    pivot.add(swirl);
+
+    // Interação
+    let targetRotX = 0;
+    let targetRotY = 0;
+    let rotX = 0;
+    let rotY = 0;
+    let pulse = 0;
+    let lastTap = 0;
+
+    function updatePointer(x, y) {
+      const nx = (x / window.innerWidth) * 2 - 1;
+      const ny = (y / window.innerHeight) * 2 - 1;
+      targetRotY = nx * 0.65;
+      targetRotX = ny * 0.32;
+    }
+
+    function triggerPulse() {
+      pulse = 1;
+    }
+
+    window.addEventListener("pointermove", (e) => {
+      updatePointer(e.clientX, e.clientY);
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      updatePointer(t.clientX, t.clientY);
+    }, { passive: true });
+
+    window.addEventListener("touchstart", () => {
+      const now = performance.now();
+      if (now - lastTap > 180) triggerPulse();
+      lastTap = now;
+    }, { passive: true });
+
+    window.addEventListener("click", triggerPulse);
+
+    // Tela cheia
+    function isStandalone() {
+      return window.navigator.standalone === true;
+    }
+
+    async function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+        return;
+      }
+
+      if (app.requestFullscreen) {
+        try {
+          await app.requestFullscreen();
+        } catch (err) {
+          hint.textContent = "No iPhone, abra pelo Safari e use Compartilhar > Adicionar à Tela de Início.";
+        }
+      } else {
+        hint.textContent = "Esse navegador pode não expor tela cheia completa. Use a Tela de Início no iPhone.";
+      }
+    }
+
+    fsBtn.addEventListener("click", toggleFullscreen);
+
+    document.addEventListener("fullscreenchange", () => {
+      fsBtn.textContent = document.fullscreenElement ? "Sair" : "Tela cheia";
+    });
+
+    if (isStandalone()) {
+      fsBtn.style.display = "none";
+      hint.textContent = "Modo app ativo.";
+    }
+
+    // Resize
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    }
+
+    window.addEventListener("resize", onResize);
+
+    // Animação
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const t = clock.getElapsedTime();
+      const dt = Math.min(clock.getDelta(), 0.033);
+
+      pulse = THREE.MathUtils.lerp(pulse, 0, 2.8 * dt * 10.0);
+
+      rotX = THREE.MathUtils.lerp(rotX, targetRotX, 0.045);
+      rotY = THREE.MathUtils.lerp(rotY, targetRotY, 0.045);
+
+      pivot.rotation.x = rotX + Math.sin(t * 0.45) * 0.08;
+      pivot.rotation.y = rotY + t * 0.36;
+      pivot.rotation.z = Math.sin(t * 0.22) * 0.06;
+
+      ringA.rotation.z += 0.0035;
+      ringB.rotation.y += 0.0045;
+      ringC.rotation.x -= 0.004;
+
+      const pulseScale = 1 + pulse * 0.1;
+      ringA.scale.setScalar(pulseScale);
+      ringB.scale.setScalar(1 + pulse * 0.06);
+      ringC.scale.setScalar(1 + pulse * 0.08);
+
+      crystal.rotation.y -= 0.0035;
+      crystal.rotation.x += 0.0018;
+      wire.rotation.y += 0.005;
+      core.scale.setScalar(1 + pulse * 0.18);
+
+      satellites.rotation.y += 0.01;
+      satellites.rotation.x = Math.sin(t * 0.7) * 0.25;
+
+      satelliteMeshes[0].position.set(Math.cos(t * 1.2) * 2.45, Math.sin(t * 1.0) * 0.75, Math.sin(t * 1.25) * 1.2);
+      satelliteMeshes[1].position.set(Math.cos(t * 0.9 + 2.2) * 3.0, Math.sin(t * 1.1 + 1.5) * 0.95, Math.sin(t * 1.45 + 0.6) * 1.35);
+      satelliteMeshes[2].position.set(Math.cos(t * 1.35 + 4.0) * 2.1, Math.sin(t * 0.85 + 2.8) * 1.15, Math.sin(t * 1.6 + 1.8) * 1.5);
+
+      satelliteMeshes[0].rotation.x += 0.04;
+      satelliteMeshes[0].rotation.y += 0.03;
+      satelliteMeshes[1].rotation.x += 0.03;
+      satelliteMeshes[1].rotation.z += 0.04;
+      satelliteMeshes[2].rotation.y += 0.05;
+      satelliteMeshes[2].rotation.z += 0.03;
+
+      stars.rotation.y += 0.00045;
+      stars.rotation.x = Math.sin(t * 0.12) * 0.05;
+
+      swirl.rotation.z -= 0.006;
+      swirl.rotation.y += 0.0025;
+
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetRotY * 0.65, 0.035);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, -targetRotX * 0.55, 0.035);
+      camera.position.z = THREE.MathUtils.lerp(camera.position.z, 8 - pulse * 0.18, 0.05);
+      camera.lookAt(0, 0, 0);
+
+      bgUniforms.uTime.value = t;
+      portalUniforms.uTime.value = t;
+      portalUniforms.uPulse.value = pulse;
+      crystalUniforms.uTime.value = t;
+      crystalUniforms.uPulse.value = pulse;
+      coreUniforms.uTime.value = t;
+      coreUniforms.uPulse.value = pulse;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

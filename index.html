@@ -5,85 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Aether Core" />
-  <title>Aether Core V4</title>
+  <meta name="theme-color" content="#050816" />
+  <title>Chrono Core V5</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div id="app">
-    <canvas id="stage"></canvas>
+  <div id="app"></div>
 
-    <div class="hud hud-top">
-      <div class="brand glass">
-        <span class="eyebrow">APPLE DEMO SCI-FI</span>
-        <strong>Aether Core</strong>
-      </div>
-
-      <div class="stats glass">
-        <div class="stat">
-          <span class="label">Pontos</span>
-          <span id="score" class="value">000000</span>
-        </div>
-        <div class="stat">
-          <span class="label">Combo</span>
-          <span id="combo" class="value">x1</span>
-        </div>
-        <div class="stat">
-          <span class="label">Tempo</span>
-          <span id="time" class="value">45.0s</span>
-        </div>
-      </div>
-
-      <button id="fullscreenBtn" class="glass action-button" type="button">Tela cheia</button>
+  <div class="hud hud--top">
+    <div class="glass brand">
+      <div class="eyebrow">THREE.JS CINEMATIC DEMO</div>
+      <h1>Chrono Core V5</h1>
+      <p>Toque nos fragmentos e estabilize o núcleo.</p>
     </div>
 
-    <div class="hud hud-energy">
-      <div class="energy glass">
-        <div class="energy-row">
-          <span class="label">Carga do núcleo</span>
-          <span id="energyValue" class="energy-value">0%</span>
-        </div>
-        <div class="bar-track">
-          <div id="energyBar" class="bar-fill"></div>
-        </div>
+    <button id="fullscreenBtn" class="glass action-btn" type="button">Tela cheia</button>
+  </div>
+
+  <div class="hud hud--stats">
+    <div class="glass stat-card">
+      <span class="label">Pontuação</span>
+      <strong id="score">000000</strong>
+    </div>
+    <div class="glass stat-card">
+      <span class="label">Combo</span>
+      <strong id="combo">x1</strong>
+    </div>
+    <div class="glass stat-card">
+      <span class="label">Tempo</span>
+      <strong id="time">75.0s</strong>
+    </div>
+  </div>
+
+  <div class="hud hud--bottom">
+    <div class="glass energy-panel">
+      <div class="energy-header">
+        <span class="label">Sincronização do núcleo</span>
+        <strong id="energyText">0%</strong>
+      </div>
+      <div class="energy-track">
+        <div id="energyFill" class="energy-fill"></div>
+      </div>
+      <div class="energy-meta">
+        <span id="phaseText">Fase 01 · Boot</span>
+        <span id="streakText">Sequência 0</span>
       </div>
     </div>
+  </div>
 
-    <div class="hud hud-bottom">
-      <div class="bottom-left glass compact">
-        <span class="label">Objetivo</span>
-        <strong>Toque nos fragmentos para atingir 100%</strong>
-      </div>
-      <div class="bottom-right glass chips">
-        <span class="chip">Fase <strong>04</strong></span>
-        <span class="chip">Sequência <strong id="streak">0</strong></span>
+  <div id="centerMessage" class="center-message hidden">
+    <div class="glass message-card">
+      <div class="eyebrow" id="centerEyebrow">FASE</div>
+      <h2 id="centerTitle">Núcleo sincronizado</h2>
+      <p id="centerBody">Continue para a próxima etapa.</p>
+    </div>
+  </div>
+
+  <div id="startScreen" class="overlay visible">
+    <div class="glass overlay-card">
+      <div class="eyebrow">APPLE DEMO SCI-FI</div>
+      <h2>Chrono Core</h2>
+      <p>
+        Uma experiência 3D mobile-first com estética clean, brilho premium e microinterações.
+        Toque nos fragmentos flutuantes para estabilizar o núcleo central antes do tempo acabar.
+      </p>
+      <ul>
+        <li>Fragmentos claros: carga padrão</li>
+        <li>Fragmento dourado: impulso raro</li>
+        <li>Na fase final, o núcleo expõe pulsos críticos</li>
+      </ul>
+      <div class="overlay-actions">
+        <button id="startBtn" class="primary-btn" type="button">Iniciar experiência</button>
       </div>
     </div>
+  </div>
 
-    <div id="toast" class="toast hidden"></div>
-
-    <div id="overlayStart" class="overlay">
-      <div class="overlay-card glass">
-        <span class="eyebrow">AETHER // REACTIVE EXPERIENCE</span>
-        <h1>Aether Core</h1>
-        <p>
-          Visual minimalista, toque preciso e núcleo reativo. Arraste para inclinar a cena.
-          Toques curtos nos fragmentos contabilizam energia, combo e pontuação.
-        </p>
-        <div class="overlay-actions">
-          <button id="startBtn" class="primary-btn" type="button">Iniciar experiência</button>
+  <div id="endScreen" class="overlay">
+    <div class="glass overlay-card">
+      <div class="eyebrow" id="endEyebrow">RESULTADO</div>
+      <h2 id="endTitle">Experiência concluída</h2>
+      <p id="endSummary">Você estabilizou o núcleo.</p>
+      <div class="result-grid">
+        <div class="result-item">
+          <span>Score</span>
+          <strong id="endScore">000000</strong>
+        </div>
+        <div class="result-item">
+          <span>Combo máximo</span>
+          <strong id="endCombo">x1</strong>
+        </div>
+        <div class="result-item">
+          <span>Sincronização</span>
+          <strong id="endEnergy">0%</strong>
         </div>
       </div>
-    </div>
-
-    <div id="overlayEnd" class="overlay hidden">
-      <div class="overlay-card glass">
-        <span class="eyebrow">RESULTADO</span>
-        <h2 id="endTitle">Missão concluída</h2>
-        <p id="endSummary"></p>
-        <div class="overlay-actions">
-          <button id="restartBtn" class="primary-btn" type="button">Jogar novamente</button>
-        </div>
+      <div class="overlay-actions">
+        <button id="restartBtn" class="primary-btn" type="button">Reiniciar</button>
       </div>
     </div>
   </div>
